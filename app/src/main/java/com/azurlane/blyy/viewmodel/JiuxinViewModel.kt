@@ -1020,7 +1020,7 @@ class JiuxinViewModel @Inject constructor(
         val resolvedId = existingId ?: UUID.randomUUID().toString()
         val preset = JiuxinPreset(
             id = resolvedId,
-            name = presetName.ifBlank { jiuxinName.value.ifBlank { "未命名预设" } },
+            name = presetName.trim().ifBlank { jiuxinName.value.ifBlank { "未命名预设" } },
             jiuxinName = jiuxinName.value,
             avatarUrl = avatarUrl.value,
             apiUrl = apiUrl.value,
@@ -1034,16 +1034,17 @@ class JiuxinViewModel @Inject constructor(
             voiceKeywords = voiceKeywords.value,
             stickersEnabled = stickersEnabled.value,
             stickerChance = stickerChance.value,
-            createdAt = if (existingId != null) presets.value.firstOrNull { it.id == existingId }?.createdAt ?: now else now,
+            createdAt = now,
             updatedAt = now
         )
         viewModelScope.launch {
-            val updated = if (existingId != null) {
-                presets.value.map { if (it.id == existingId) preset else it }
-            } else {
-                presets.value + preset
+            settings.updateAiJiuxinPresets { current ->
+                if (existingId != null) {
+                    current.map { if (it.id == existingId) preset.copy(createdAt = it.createdAt) else it }
+                } else {
+                    current + preset
+                }
             }
-            settings.setAiJiuxinPresets(updated)
             Log.d(TAG, "Saved preset: ${preset.id} - ${preset.name}")
         }
         return resolvedId
@@ -1070,11 +1071,10 @@ class JiuxinViewModel @Inject constructor(
         }
     }
 
-    /** 删除指定预设 */
+    /** 删除指定预设（原子更新，见 [savePersonaConfig] 说明） */
     fun deletePreset(presetId: String) {
         viewModelScope.launch {
-            val updated = presets.value.filter { it.id != presetId }
-            settings.setAiJiuxinPresets(updated)
+            settings.updateAiJiuxinPresets { current -> current.filter { it.id != presetId } }
             Log.d(TAG, "Deleted preset: $presetId")
         }
     }
@@ -1093,20 +1093,21 @@ class JiuxinViewModel @Inject constructor(
         val now = System.currentTimeMillis()
         val config = ApiConfig(
             id = resolvedId,
-            name = configName.ifBlank { "API 配置" },
+            name = configName.trim().ifBlank { "API 配置" },
             apiUrl = apiUrl.value,
             apiKey = apiKey.value,
             model = selectedModel.value,
-            createdAt = if (existingId != null) apiConfigs.value.firstOrNull { it.id == existingId }?.createdAt ?: now else now,
+            createdAt = now,
             updatedAt = now
         )
         viewModelScope.launch {
-            val updated = if (existingId != null) {
-                apiConfigs.value.map { if (it.id == existingId) config else it }
-            } else {
-                apiConfigs.value + config
+            settings.updateAiApiConfigs { current ->
+                if (existingId != null) {
+                    current.map { if (it.id == existingId) config.copy(createdAt = it.createdAt) else it }
+                } else {
+                    current + config
+                }
             }
-            settings.setAiApiConfigs(updated)
             Log.d(TAG, "Saved API config: ${config.id} - ${config.name}")
         }
         return resolvedId
@@ -1122,11 +1123,10 @@ class JiuxinViewModel @Inject constructor(
         }
     }
 
-    /** 删除指定 API 配置 */
+    /** 删除指定 API 配置（原子更新，见 [savePersonaConfig] 说明） */
     fun deleteApiConfig(configId: String) {
         viewModelScope.launch {
-            val updated = apiConfigs.value.filter { it.id != configId }
-            settings.setAiApiConfigs(updated)
+            settings.updateAiApiConfigs { current -> current.filter { it.id != configId } }
             Log.d(TAG, "Deleted API config: $configId")
         }
     }
@@ -1135,6 +1135,10 @@ class JiuxinViewModel @Inject constructor(
 
     /**
      * 保存当前舰娘人格配置为新的人格配置项
+     *
+     * 持久化走 [PlayerSettingsDataStore.updateAiPersonaConfigs] 原子更新：
+     * 不再读取 [personaConfigs] StateFlow 快照后全量覆盖写回（快照滞后于 DataStore
+     * 回流，写队列积压时后写会抹掉先写，表现为已存人格数量增多后继续保存丢失/失效）。
      *
      * @param personaName 人格名称（如"标枪"）
      * @param existingId 非空时更新已有配置，空时新建
@@ -1145,7 +1149,8 @@ class JiuxinViewModel @Inject constructor(
         val now = System.currentTimeMillis()
         val config = PersonaConfig(
             id = resolvedId,
-            name = personaName.ifBlank { jiuxinName.value.ifBlank { "未命名舰娘" } },
+            // trim 与 UI 重名校验（对输入 trim 后比对）保持一致，避免"名称尾部空格"绕过重名检查
+            name = personaName.trim().ifBlank { jiuxinName.value.ifBlank { "未命名舰娘" } },
             jiuxinName = jiuxinName.value,
             avatarUrl = avatarUrl.value,
             systemPrompt = systemPrompt.value,
@@ -1156,16 +1161,18 @@ class JiuxinViewModel @Inject constructor(
             voiceKeywords = voiceKeywords.value,
             stickersEnabled = stickersEnabled.value,
             stickerChance = stickerChance.value,
-            createdAt = if (existingId != null) personaConfigs.value.firstOrNull { it.id == existingId }?.createdAt ?: now else now,
+            createdAt = now,
             updatedAt = now
         )
         viewModelScope.launch {
-            val updated = if (existingId != null) {
-                personaConfigs.value.map { if (it.id == existingId) config else it }
-            } else {
-                personaConfigs.value + config
+            settings.updateAiPersonaConfigs { current ->
+                if (existingId != null) {
+                    // 编辑：保留原条目的 createdAt
+                    current.map { if (it.id == existingId) config.copy(createdAt = it.createdAt) else it }
+                } else {
+                    current + config
+                }
             }
-            settings.setAiPersonaConfigs(updated)
             Log.d(TAG, "Saved persona config: ${config.id} - ${config.name}")
         }
         return resolvedId
@@ -1189,11 +1196,10 @@ class JiuxinViewModel @Inject constructor(
         }
     }
 
-    /** 删除指定舰娘人格配置 */
+    /** 删除指定舰娘人格配置（原子更新，见 [savePersonaConfig] 说明） */
     fun deletePersonaConfig(configId: String) {
         viewModelScope.launch {
-            val updated = personaConfigs.value.filter { it.id != configId }
-            settings.setAiPersonaConfigs(updated)
+            settings.updateAiPersonaConfigs { current -> current.filter { it.id != configId } }
             Log.d(TAG, "Deleted persona config: $configId")
         }
     }

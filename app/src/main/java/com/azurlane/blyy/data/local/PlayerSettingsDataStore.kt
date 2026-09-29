@@ -15,10 +15,13 @@ import com.azurlane.blyy.data.model.VoiceLanguage
 import com.azurlane.blyy.ui.theme.UiStyle
 import com.azurlane.blyy.viewmodel.PlayMode
 import android.util.Log
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.retryWhen
+import java.io.IOException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -159,8 +162,21 @@ class PlayerSettingsDataStore @Inject constructor(
      * 与原有的 `?: ""` / `?: emptyList()` 逻辑配合，保证 UI 永不崩溃。
      *
      * 注意：仅捕获读取异常；写入异常（edit {} 内）仍由调用方的 try-catch 处理。
+     *
+     * 重试层：Flow 抛出异常后上游即终止，catch 兜底发射 emptyPreferences 后整条数据流
+     * **永久完成**——所有派生 Flow（含 aiPersonaConfigs 等配置列表）冻结在空值，
+     * 后续任何"读快照 → 全量覆盖写"都会基于空列表清掉已存数据，且 UI 不再收到更新。
+     * 因此对瞬时 IO 异常（并发写冲突/低存储/ROM 抖动）先重试 3 次，仅重试耗尽后才兜底。
      */
     private val safeData: Flow<Preferences> = context.dataStore.data
+        .retryWhen { cause, attempt ->
+            val shouldRetry = cause is IOException && attempt < 3
+            if (shouldRetry) {
+                Log.w(TAG, "DataStore read failed (attempt ${attempt + 1}), retrying", cause)
+                delay(100L * (attempt + 1))
+            }
+            shouldRetry
+        }
         .catch { e ->
             Log.e(TAG, "DataStore read failed, falling back to empty preferences", e)
             emit(androidx.datastore.preferences.core.emptyPreferences())
@@ -551,6 +567,26 @@ class PlayerSettingsDataStore @Inject constructor(
         context.dataStore.edit { it[AI_JIUXIN_PRESETS_KEY] = lenientJson.encodeToString(presets) }
     }
 
+    /**
+     * 预设列表原子更新：在 edit 事务内"读取当前落盘值 → 变换 → 写回"。
+     *
+     * 修复"保存一定数量后继续保存失效"：此前调用方基于 StateFlow 快照（滞后于 DataStore
+     * 落盘回流，写队列积压时滞后可达秒级）拼接新列表后全量覆盖写回，后写会抹掉先写，
+     * 造成已存条目丢失。edit 由 DataStore 串行化，事务内读到的永远是最新值，消除丢更新竞态。
+     */
+    suspend fun updateAiJiuxinPresets(transform: (List<com.azurlane.blyy.data.model.JiuxinPreset>) -> List<com.azurlane.blyy.data.model.JiuxinPreset>) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[AI_JIUXIN_PRESETS_KEY] ?: "[]"
+            val current = try {
+                lenientJson.decodeFromString<List<com.azurlane.blyy.data.model.JiuxinPreset>>(json)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to decode presets during atomic update, treating as empty", e)
+                emptyList()
+            }
+            prefs[AI_JIUXIN_PRESETS_KEY] = lenientJson.encodeToString(transform(current))
+        }
+    }
+
     /** 会话列表自定义排序（session id 列表，用户拖动后的顺序） */
     val aiSessionOrder: Flow<List<String>> = safeData.map { prefs ->
         val json = prefs[AI_SESSION_ORDER_KEY] ?: "[]"
@@ -583,6 +619,20 @@ class PlayerSettingsDataStore @Inject constructor(
         context.dataStore.edit { it[AI_API_CONFIGS_KEY] = lenientJson.encodeToString(configs) }
     }
 
+    /** API 配置列表原子更新，机制见 [updateAiJiuxinPresets] */
+    suspend fun updateAiApiConfigs(transform: (List<com.azurlane.blyy.data.model.ApiConfig>) -> List<com.azurlane.blyy.data.model.ApiConfig>) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[AI_API_CONFIGS_KEY] ?: "[]"
+            val current = try {
+                lenientJson.decodeFromString<List<com.azurlane.blyy.data.model.ApiConfig>>(json)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to decode API configs during atomic update, treating as empty", e)
+                emptyList()
+            }
+            prefs[AI_API_CONFIGS_KEY] = lenientJson.encodeToString(transform(current))
+        }
+    }
+
     // ── 多套舰娘人格配置管理 ──
 
     /** 所有已保存的舰娘人格配置列表 */
@@ -594,6 +644,26 @@ class PlayerSettingsDataStore @Inject constructor(
     /** 保存舰娘人格配置列表（覆盖） */
     suspend fun setAiPersonaConfigs(configs: List<com.azurlane.blyy.data.model.PersonaConfig>) {
         context.dataStore.edit { it[AI_PERSONA_CONFIGS_KEY] = lenientJson.encodeToString(configs) }
+    }
+
+    /**
+     * 舰娘人格配置列表原子更新，机制见 [updateAiJiuxinPresets]。
+     *
+     * 这是"已保存人格达到一定数量后，继续保存人格失效/丢失"的根治点：
+     * 新增/编辑/删除人格都应在 transform 内基于最新落盘列表操作，禁止调用方
+     * 持有过期快照后全量覆盖。
+     */
+    suspend fun updateAiPersonaConfigs(transform: (List<com.azurlane.blyy.data.model.PersonaConfig>) -> List<com.azurlane.blyy.data.model.PersonaConfig>) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[AI_PERSONA_CONFIGS_KEY] ?: "[]"
+            val current = try {
+                lenientJson.decodeFromString<List<com.azurlane.blyy.data.model.PersonaConfig>>(json)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to decode persona configs during atomic update, treating as empty", e)
+                emptyList()
+            }
+            prefs[AI_PERSONA_CONFIGS_KEY] = lenientJson.encodeToString(transform(current))
+        }
     }
 
     // ── 用户（指挥官）配置 ──
