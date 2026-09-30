@@ -149,6 +149,17 @@ fun HomeScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         // ── 背景层 ──
         if (isCommandCenter) {
+            // 基础深海渐变底色：AGSL 流体着色器仅 ~6% 不透明度，是叠加层而非底色，
+            // 必须垫在实体渐变上，否则透出窗口浅色底（强制深色下出现"暗色顶栏+浅色内容"割裂）
+            val isDarkBase = LocalIsDark.current
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        if (isDarkBase) AppColors.Gradient.BackgroundDark()
+                        else AppColors.Gradient.BackgroundLight()
+                    )
+            )
             // 指挥中心风格：AGSL 流体着色器 + 誓约氛围层
             val hasOathShips = state.favoriteShips.isNotEmpty()
             val oathIntensity = if (hasOathShips) 1f else 0f

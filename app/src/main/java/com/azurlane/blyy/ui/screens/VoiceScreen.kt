@@ -1122,15 +1122,9 @@ private fun CollapsedPlayerBar(
                     .background(
                         brush = Brush.linearGradient(
                             colors = if (isDark) {
-                                listOf(
-                                    Color(0xFF2A2A4A),
-                                    Color(0xFF1A1A2E)
-                                )
+                                AppColors.Player.CollapsedGradientDark
                             } else {
-                                listOf(
-                                    Color(0xFFF8F8FF),
-                                    Color(0xFFE8E8F0)
-                                )
+                                AppColors.Player.CollapsedGradientLight
                             }
                         )
                     ),

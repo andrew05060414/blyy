@@ -53,9 +53,9 @@ object AppColors {
     val SurfaceDark: Color = Color(0xFF0A1628)
     val OnSurfaceDark: Color = Color(0xFFE2EAF4)
 
-    val BackgroundGradientStartDark: Color = Color(0xFF0A1628)
-    val BackgroundGradientMidDark: Color = Color(0xFF0F1D32)
-    val BackgroundGradientEndDark: Color = Color(0xFF152238)
+    val BackgroundGradientStartDark: Color = Color(0xFF071324)
+    val BackgroundGradientMidDark: Color = Color(0xFF0E1E33)
+    val BackgroundGradientEndDark: Color = Color(0xFF16293F)
 
     // ==================== 表面色 ====================
     val SurfaceVariantLight: Color = Color(0xFFB8D4E8)
@@ -78,10 +78,40 @@ object AppColors {
 
     // ==================== 指挥面板色 ====================
     object Panel {
-        val Dark: Color = Color(0xCC0F2038)
-        val Light: Color = Color(0xCCFFFFFF)
+        val Dark: Color = Color(0xD90F1F36)
+        val Light: Color = Color(0xE6FFFFFF)
         val BorderDark: Color = Color(0x6648CAE4)
         val BorderLight: Color = Color(0x660096C7)
+
+        /**
+         * 面板内部填充渐变 — 顶部微亮、底部微暗，模拟受光曲面，
+         * 替代旧的纯色填充，让玻璃面板拥有"实体厚度"。
+         */
+        fun FillDark(): Brush = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFF152640),
+                Color(0xFF0F1F36)
+            )
+        )
+
+        fun FillLight(): Brush = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFFFFFFFF),
+                Color(0xFFEFF6FC)
+            )
+        )
+    }
+
+    // ==================== 深度阴影 — 有色柔和投影，替代"零阴影"平面化 ====================
+    object Depth {
+        /** 暗色模式环境阴影 — 深海蓝黑，避免纯黑阴影发脏 */
+        val AmbientDark: Color = Color(0x33051214)
+        /** 暗色模式直射阴影 — 带主色方向的投影 */
+        val SpotDark: Color = Color(0x4D05101E)
+        /** 亮色模式环境阴影 */
+        val AmbientLight: Color = Color(0x1F27435C)
+        /** 亮色模式直射阴影 */
+        val SpotLight: Color = Color(0x33274A63)
     }
 
     // ==================== 金色强调 ====================
@@ -91,6 +121,23 @@ object AppColors {
         val GoldDark: Color = Color(0xFFE8A838)
         val Cyan: Color = Color(0xFF48CAE4)
         val CyanGlow: Color = Color(0x3348CAE4)
+    }
+
+    // ==================== 播放器 / 查看器表面（收编各 Screen 残留硬编码） ====================
+    object Player {
+        /** 语音页折叠播放条渐变（暗）— 深海夜色，替代原紫色系硬编码，与主题统一 */
+        val CollapsedGradientDark: List<Color> = listOf(Color(0xFF16233C), Color(0xFF0D1728))
+        /** 语音页折叠播放条渐变（亮）— 瓷白微蓝，替代原紫灰硬编码 */
+        val CollapsedGradientLight: List<Color> = listOf(Color(0xFFFFFFFF), Color(0xFFE1EDF6))
+    }
+
+    object Live2DViewer {
+        /** Live2D 查看器背景（暗）— 蓝调中性深色，衬托模型且不脱离主题 */
+        val BgDark: Color = Color(0xFF0F1826)
+        val BgLight: Color = Color(0xFFF4F8FB)
+        val WarningDark: Color = SemanticDark.Warning
+        /** 浅色模式用更深的警示橙确保 WCAG AA 对比度（amber-600 在浅背景仅 ~3.5:1） */
+        val WarningLight: Color = Color(0xFFE65100)
     }
 
     // ==================== 毛玻璃效果 ====================

@@ -99,6 +99,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.azurlane.blyy.R
+import com.azurlane.blyy.ui.theme.AppColors
 import com.azurlane.blyy.ui.theme.AppSpacing
 import com.azurlane.blyy.ui.theme.AppTypography
 import com.azurlane.blyy.ui.theme.LocalIsDark
@@ -163,11 +164,11 @@ private const val STUCK_THRESHOLD_MS = 15_000L
 
 /** 全屏覆盖层（加载/错误/SSL 警告）共用底色与警示色 — 归口管理避免三处重复 */
 private object Live2DOverlayColors {
-    val BgDark = Color(0xFF0D1117)
-    val BgLight = Color(0xFFF6F8FA)
-    // 浅色模式用更深的橙色确保 WCAG AA 对比度（Orange 500 在浅背景仅 ~2:1，Orange 900 达 ~5:1）
-    val WarningDark = Color(0xFFFF9800)
-    val WarningLight = Color(0xFFE65100)
+    // 色值统一走主题令牌（AppColors.Live2DViewer）：蓝调中性底 + WCAG 达标的语义警示色
+    val BgDark = AppColors.Live2DViewer.BgDark
+    val BgLight = AppColors.Live2DViewer.BgLight
+    val WarningDark = AppColors.Live2DViewer.WarningDark
+    val WarningLight = AppColors.Live2DViewer.WarningLight
 }
 
 // AnimatedContent phase 切换动画规格 — 提到顶级避免每次重组都新建 2 个 tween 实例

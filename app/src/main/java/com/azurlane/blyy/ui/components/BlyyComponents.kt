@@ -3,6 +3,7 @@ package com.azurlane.blyy.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -50,12 +51,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +68,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.azurlane.blyy.ui.theme.AppAnimation
 import com.azurlane.blyy.ui.theme.AppColors
+import com.azurlane.blyy.ui.theme.AppElevation
 import com.azurlane.blyy.ui.theme.AppSpacing
 import com.azurlane.blyy.ui.theme.AppTypography
 import com.azurlane.blyy.ui.theme.BlyyShapes
@@ -173,7 +177,9 @@ fun BlyyTopBar(
 
     val isDark = LocalIsDark.current
     val isWatch = isWatchScreen()
-    val panelColor = if (isDark) AppColors.Panel.Dark else AppColors.Panel.Light
+    val panelFill = if (isDark) AppColors.Panel.FillDark() else AppColors.Panel.FillLight()
+    val shadowAmbient = if (isDark) AppColors.Depth.AmbientDark else AppColors.Depth.AmbientLight
+    val shadowSpot = if (isDark) AppColors.Depth.SpotDark else AppColors.Depth.SpotLight
     val accentColor = MaterialTheme.colorScheme.primary
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -181,8 +187,14 @@ fun BlyyTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = AppSpacing.Screen.Horizontal, vertical = if (isWatch) AppSpacing.Xs else AppSpacing.Sm)
+                .shadow(
+                    elevation = AppElevation.Level2,
+                    shape = BlyyShapes.PanelMedium,
+                    ambientColor = shadowAmbient,
+                    spotColor = shadowSpot
+                )
                 .clip(BlyyShapes.PanelMedium)
-                .background(panelColor)
+                .background(panelFill)
                 .border(
                     width = AppSpacing.Border.Thin,
                     brush = Brush.linearGradient(
@@ -267,6 +279,12 @@ fun ClassicTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = AppSpacing.Screen.Horizontal, vertical = if (isWatch) AppSpacing.Xs else AppSpacing.Sm)
+                .shadow(
+                    elevation = AppElevation.Level1,
+                    shape = RoundedCornerShape(AppSpacing.Corner.Lg),
+                    ambientColor = AppColors.Depth.AmbientLight,
+                    spotColor = AppColors.Depth.SpotLight
+                )
                 .clip(RoundedCornerShape(AppSpacing.Corner.Lg))
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .padding(horizontal = if (isWatch) AppSpacing.Xs else AppSpacing.Sm, vertical = AppSpacing.Xs),
@@ -327,7 +345,9 @@ private fun HorizontalDivider() {
 /**
  * 科技面板容器
  *
- * 优化要点（高级化）：
+ * 质感体系（指挥中心风格）：
+ * - 有色柔和投影（[AppColors.Depth]）：面板从背景上"浮起"，替代旧零阴影平面化
+ * - 内部受光渐变（[AppColors.Panel.FillDark]/[FillLight]）：顶部微亮、底部微暗，模拟曲面受光
  * - 顶部 1px 内高光线，模拟玻璃材质的顶面反光
  * - 四角 L 型描边装饰（drawBehind），强化 HUD 机械感
  */
@@ -341,8 +361,26 @@ fun BlyyPanel(
     if (!LocalUiStyle.current.isCommandCenter()) {
         Box(
             modifier = modifier
+                .shadow(
+                    elevation = AppElevation.Level1,
+                    shape = RoundedCornerShape(AppSpacing.Corner.Lg),
+                    ambientColor = AppColors.Depth.AmbientLight,
+                    spotColor = AppColors.Depth.SpotLight
+                )
                 .clip(RoundedCornerShape(AppSpacing.Corner.Lg))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceContainerLow,
+                            MaterialTheme.colorScheme.surfaceContainer
+                        )
+                    )
+                )
+                .border(
+                    width = AppSpacing.Border.Thin,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
+                    shape = RoundedCornerShape(AppSpacing.Corner.Lg)
+                )
         ) {
             content()
         }
@@ -350,7 +388,9 @@ fun BlyyPanel(
     }
 
     val isDark = LocalIsDark.current
-    val panelColor = if (isDark) AppColors.Panel.Dark else AppColors.Panel.Light.copy(alpha = 0.95f)
+    val panelFill = if (isDark) AppColors.Panel.FillDark() else AppColors.Panel.FillLight()
+    val shadowAmbient = if (isDark) AppColors.Depth.AmbientDark else AppColors.Depth.AmbientLight
+    val shadowSpot = if (isDark) AppColors.Depth.SpotDark else AppColors.Depth.SpotLight
     val shape = chamferedShape(chamfer)
     val cornerLenPx = with(LocalDensity.current) { 14.dp.toPx() }
     val strokePx = with(LocalDensity.current) { 1.5.dp.toPx() }
@@ -358,8 +398,14 @@ fun BlyyPanel(
 
     Box(
         modifier = modifier
+            .shadow(
+                elevation = AppElevation.Level1,
+                shape = shape,
+                ambientColor = shadowAmbient,
+                spotColor = shadowSpot
+            )
             .clip(shape)
-            .background(panelColor)
+            .background(panelFill)
             .border(
                 width = AppSpacing.Border.Thin,
                 brush = Brush.linearGradient(
@@ -433,10 +479,26 @@ fun BlyyPrimaryButton(
         animationSpec = AppAnimation.Press.heavy(),
         label = "btnScale"
     )
-    val bgColor by animateColorAsState(
-        targetValue = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-        label = "btnBg"
+    // 按压时投影回落（模拟物理下沉），松开回弹
+    val shadowElevation by animateDpAsState(
+        targetValue = if (isPressed || !enabled) AppElevation.Level0 else AppElevation.Level3,
+        animationSpec = AppAnimation.Press.heavy(),
+        label = "btnShadow"
     )
+    val primaryColor = MaterialTheme.colorScheme.primary
+    // 三段垂直渐变 — 顶亮中实底深，模拟顶部受光的实体按键
+    val btnBrush = if (enabled) {
+        Brush.verticalGradient(
+            colors = listOf(
+                lerp(primaryColor, Color.White, 0.22f),
+                primaryColor,
+                lerp(primaryColor, Color.Black, 0.22f)
+            )
+        )
+    } else {
+        val disabledColor = MaterialTheme.colorScheme.surfaceVariant
+        Brush.verticalGradient(listOf(disabledColor, disabledColor))
+    }
     val isWatch = isWatchScreen()
 
     // 流光扫过动画 — 按压时触发一次
@@ -454,22 +516,24 @@ fun BlyyPrimaryButton(
     Box(
         modifier = modifier
             .scale(scale)
-            .clip(BlyyShapes.Button)
-            .background(
-                brush = if (enabled) {
-                    Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
-                        )
-                    )
-                } else {
-                    Brush.linearGradient(listOf(bgColor, bgColor))
-                }
+            .shadow(
+                elevation = shadowElevation,
+                shape = BlyyShapes.Button,
+                ambientColor = AppColors.Depth.AmbientDark,
+                // 直射阴影带主色 — 按钮悬浮时的主色辉光
+                spotColor = primaryColor.copy(alpha = 0.45f)
             )
+            .clip(BlyyShapes.Button)
+            .background(brush = btnBrush)
             .border(
                 width = AppSpacing.Border.Thin,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = if (enabled) 0.35f else 0.12f),
+                // 顶部亮、底部透 — 配合渐变形成倒角受光
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = if (enabled) 0.45f else 0.1f),
+                        Color.White.copy(alpha = 0.04f)
+                    )
+                ),
                 shape = BlyyShapes.Button
             )
             // 顶部高光描边 + 流光扫过
@@ -554,13 +618,21 @@ fun BlyySecondaryButton(
     )
     val isDark = LocalIsDark.current
     val isWatch = isWatchScreen()
-    val panelColor = if (isDark) AppColors.Panel.Dark else AppColors.Panel.Light
+    val panelFill = if (isDark) AppColors.Panel.FillDark() else AppColors.Panel.FillLight()
+    val shadowAmbient = if (isDark) AppColors.Depth.AmbientDark else AppColors.Depth.AmbientLight
+    val shadowSpot = if (isDark) AppColors.Depth.SpotDark else AppColors.Depth.SpotLight
 
     Box(
         modifier = modifier
             .scale(scale)
+            .shadow(
+                elevation = if (enabled) AppElevation.Level1 else AppElevation.Level0,
+                shape = BlyyShapes.Button,
+                ambientColor = shadowAmbient,
+                spotColor = shadowSpot
+            )
             .clip(BlyyShapes.Button)
-            .background(panelColor)
+            .background(panelFill)
             .border(
                 width = AppSpacing.Border.Normal,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 0.6f else 0.2f),
@@ -616,12 +688,22 @@ fun BlyyChip(
         label = "chipScale"
     )
     // 颜色平滑过渡 — 替代旧的硬切 bgColor/borderColor
-    val bgColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        animationSpec = tween(durationMillis = 250, easing = AppAnimation.Easings.Standard),
-        label = "chipBg"
-    )
+    // 选中态：垂直受光渐变（上密下疏），呼应主按钮的实体感
+    val bgColor = if (selected) {
+        Brush.verticalGradient(
+            colors = listOf(
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            colors = listOf(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            )
+        )
+    }
     val textColor by animateColorAsState(
         targetValue = if (selected) MaterialTheme.colorScheme.primary
         else MaterialTheme.colorScheme.onSurfaceVariant,
