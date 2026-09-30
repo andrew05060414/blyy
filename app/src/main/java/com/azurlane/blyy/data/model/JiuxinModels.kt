@@ -387,7 +387,29 @@ data class TypingMember(
 )
 
 /**
- * 啾信聊天会话状态
+ * 舰娘长期记忆（跨会话，按舰娘身份存储）
+ *
+ * 由后台自动摘要生成：当会话消息积累到阈值后，把"较早且尚未摘要"的消息
+ * 交给 API 提炼成一段记忆文本，注入后续对话的 systemPrompt，
+ * 使舰娘跨会话记住与指挥官的相处内容。
+ *
+ * @param text 记忆正文（精炼条目，注入 prompt 前；上限由 ViewModel 控制）
+ * @param summarizedCount 已完成摘要的消息数量进度（按消息列表绝对下标计）
+ * @param summarizedLastTs 已摘要区间内最后一条消息的 timestamp——进度锚点。
+ *  消息列表超过 [com.azurlane.blyy.viewmodel.JiuxinViewModel] 的 MAX_CHAT_HISTORY 后
+ *  会从头部截断，绝对下标发生漂移；以下一艘时间戳为锚重新定位进度，避免重复/漏摘要
+ * @param updatedAt 最后更新时间
+ */
+@Serializable
+data class PersonaMemory(
+    val text: String = "",
+    val summarizedCount: Int = 0,
+    val summarizedLastTs: Long = 0L,
+    val updatedAt: Long = 0L
+)
+
+/**
+ * 聊天会话状态
  *
  * 群聊并发扩展：
  * - [typingMembers] 在群聊并发回复期间，记录正在打字的成员列表。

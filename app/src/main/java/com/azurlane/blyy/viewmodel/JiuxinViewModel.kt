@@ -18,6 +18,7 @@ import com.azurlane.blyy.data.model.JiuxinPreset
 import com.azurlane.blyy.data.model.ApiConfig
 import com.azurlane.blyy.data.model.MessageStatus
 import com.azurlane.blyy.data.model.PersonaConfig
+import com.azurlane.blyy.data.model.PersonaMemory
 import com.azurlane.blyy.data.model.SessionType
 import com.azurlane.blyy.data.model.Ship
 import com.azurlane.blyy.data.model.TypingMember
@@ -121,6 +122,18 @@ class JiuxinViewModel @Inject constructor(
 
         /** 语音触发关键词默认值 — 与 PlayerSettingsDataStore 默认保持一致 */
         private const val DEFAULT_VOICE_KEYWORDS = "你好;早安;晚安;加油;辛苦了"
+
+        // ── 舰娘长期记忆 ──
+        /** 会话消息总量达到该值后才启用记忆摘要（太早没有可提炼的稳定信息） */
+        private const val MEMORY_TOTAL_THRESHOLD = 40
+        /** 摘要时保留最近 N 条消息不参与（近期内容已全量在上下文里，无需记忆化） */
+        private const val MEMORY_KEEP_RECENT = 12
+        /** 距上次摘要至少新增 N 条才再次触发（控制 API 调用频率与成本） */
+        private const val MEMORY_MIN_NEW = 20
+        /** 记忆正文长度上限（字符），约束注入 prompt 的体积 */
+        private const val MEMORY_MAX_CHARS = 1200
+        /** 单次送入摘要的对话记录字符上限（截断最旧部分，控制 token 消耗） */
+        private const val MEMORY_TRANSCRIPT_MAX_CHARS = 6000
 
         /** 容错 JSON 实例：忽略未知字段，避免模型升级后反序列化崩溃 */
         private val json = Json { ignoreUnknownKeys = true; isLenient = true }
@@ -278,6 +291,55 @@ class JiuxinViewModel @Inject constructor(
     // ── 多套舰娘人格配置（独立于 API 配置，可组合） ──
     val personaConfigs: StateFlow<List<PersonaConfig>> = settings.aiPersonaConfigs
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // ── 舰娘长期记忆（跨会话，按舰娘身份 shipKey 存储） ──
+
+    /**
+     * 所有舰娘的长期记忆。
+     *
+     * 使用 [SharingStarted.Eagerly] 而非 WhileSubscribed：记忆有两处 `.value` 即时读取——
+     * callApi 发消息时的注入、摘要触发时的进度定位，都发生在"无 UI 订阅者"的聊天流程里；
+     * WhileSubscribed 会在无订阅者 5 秒后冻结上游（personaConfigs"保存失效"的同款教训），
+     * Eagerly 保证任意时刻可读到最新落盘值。
+     */
+    private val personaMemories: StateFlow<Map<String, PersonaMemory>> =
+        settings.aiPersonaMemories.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** 当前全局人格（按 [computeShipKey] 身份定位）的长期记忆，供人格分区展示/编辑 */
+    val currentPersonaMemory: StateFlow<PersonaMemory?> = combine(
+        personaMemories, avatarUrl, jiuxinName
+    ) { memories, avatar, name ->
+        memories[computeShipKey(ChatSession(avatarUrl = normalizeUrl(avatar), jiuxinName = name))]
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** 正在后台摘要中的舰娘身份（防同键并发重复调 API；仅主线程访问，触发与 finally 移除都在 Main） */
+    private val memorySummarizingKeys: MutableSet<String> = mutableSetOf()
+
+    /** 当前全局人格的身份 key（与会话身份语义一致，见 [computeShipKey]） */
+    private fun currentPersonaKey(): String =
+        computeShipKey(ChatSession(avatarUrl = normalizeUrl(avatarUrl.value), jiuxinName = jiuxinName.value))
+
+    /** 手动编辑当前人格的长期记忆正文（保留摘要进度，不触发重摘） */
+    fun savePersonaMemoryText(text: String) {
+        val key = currentPersonaKey()
+        viewModelScope.launch {
+            settings.updateAiPersonaMemories { cur ->
+                val old = cur[key] ?: PersonaMemory()
+                cur + (key to old.copy(
+                    text = text.take(MEMORY_MAX_CHARS),
+                    updatedAt = System.currentTimeMillis()
+                ))
+            }
+        }
+    }
+
+    /** 清空当前人格的长期记忆（移除条目，后续自动摘要从零重建） */
+    fun clearPersonaMemory() {
+        val key = currentPersonaKey()
+        viewModelScope.launch {
+            settings.updateAiPersonaMemories { cur -> cur - key }
+        }
+    }
 
     /**
      * 按舰娘去重后的会话列表：同一舰娘的多个会话只保留最新一条。
@@ -1983,6 +2045,10 @@ class JiuxinViewModel @Inject constructor(
                 )
                 addMessage(aiMessage)
 
+                // 长期记忆：本轮对话落库后，达到阈值即后台增量摘要（fire-and-forget，
+                // 不阻塞、不影响聊天流程；失败静默记日志，下轮触发自动重试）
+                maybeUpdateMemory(_sessions.value.firstOrNull { it.id == sessionId })
+
                 // 表情包逻辑：开关开启 + 概率命中 + 匹配到表情包（从会话快照读取配置）
                 val stickersEnabledSetting = currentSessionSnapshot?.stickersEnabled ?: settings.aiStickersEnabled.first()
                 if (stickersEnabledSetting) {
@@ -2898,13 +2964,25 @@ class JiuxinViewModel @Inject constructor(
         val modelStr = session?.model?.ifBlank { settings.aiModel.first() } ?: settings.aiModel.first()
         val model = modelStr.ifBlank { DEFAULT_MODEL }
 
+        // 长期记忆注入：把该舰娘跨会话的记忆摘要拼进 systemPrompt，
+        // 使舰娘"记得"之前会话的相处内容。记忆按会话身份（computeShipKey）定位。
+        val effectivePrompt = buildString {
+            append(prompt)
+            val memory = personaMemories.value[session?.let { computeShipKey(it) } ?: currentPersonaKey()]?.text
+            if (!memory.isNullOrBlank()) {
+                append("\n\n[长期记忆] 以下是你与指挥官过往相处的真实记录摘要。" +
+                    "回答时可自然沿用其中的称呼、话题与约定，但不要在回复中罗列记忆原文：\n")
+                append(memory)
+            }
+        }
+
         val recentMessages = _chatState.value.messages.takeLast(20)
 
         // 构造 OpenAI 兼容 messages 数组（system + history）
         // 注意：recentMessages 已包含最新用户消息（sendMessage 中 addMessage 在 callApi 之前），
         // 不再重复追加，避免用户消息在上下文中出现两次（与 callGroupApi 的 P0-1 修复保持一致）。
         val roleMessages = buildList {
-            add(ChatRoleMessage(role = "system", content = prompt))
+            add(ChatRoleMessage(role = "system", content = effectivePrompt))
             recentMessages.forEach { msg ->
                 val role = when (msg.type) {
                     ChatMessageType.USER.name -> "user"
@@ -2930,6 +3008,140 @@ class JiuxinViewModel @Inject constructor(
         return when (val result = apiRepository.chatCompletion(request)) {
             is JiuxinApiResult.Success -> result.content
             is JiuxinApiResult.Failure -> throw result.error
+        }
+    }
+
+    // ── 舰娘长期记忆：后台增量摘要 ──
+
+    /** 摘要任务的 systemPrompt：把对话记录提炼为角色的长期记忆条目 */
+    private val MEMORY_SUMMARY_SYSTEM_PROMPT: String =
+        "你是记忆整理助手。用户会给你一段舰娘角色与指挥官（用户）的对话记录，" +
+        "请把它提炼为该角色的长期记忆，供之后的对话作为背景使用。要求：\n" +
+        "1. 用简洁的第三人称条目列出关键信息：指挥官的称呼/昵称偏好、共同话题与结论、" +
+        "指挥官透露的个人信息与习惯、约定或未完成的话题、整体情绪基调；\n" +
+        "2. 略去寒暄与无信息量的内容，不要记录台词原文；\n" +
+        "3. 若提供了已有记忆，在其基础上合并更新（修正冲突、补充新信息），保持条目精炼；\n" +
+        "4. 只输出记忆条目本身，不要任何解释、前言或代码块。"
+
+    /**
+     * 长期记忆增量摘要：私聊会话消息积累超过阈值后，把"较早且尚未摘要"的消息
+     * 交给该会话自身的 API 提炼/合并为记忆文本，按舰娘身份（[computeShipKey]）落库。
+     *
+     * 触发时机：sendMessage 收到成功回复并落库后（fire-and-forget，绝不阻塞聊天）。
+     *
+     * 防护清单（每个都是容易踩的坑）：
+     * - 群聊跳过：多成员身份不唯一，记忆归属不明；
+     * - 同舰娘同时仅一个在途摘要（并发 set 原子去重），失败不推进进度、下轮自动重试；
+     * - 进度定位优先用时间戳锚（[PersonaMemory.summarizedLastTs]）：消息列表超过
+     *   MAX_CHAT_HISTORY 后会从头部截断，纯下标会漂移导致重复/漏摘要；
+     * - 写入时进度"只前进不回退"，防并发的旧摘要覆盖新进度；
+     * - 写记忆走 [PlayerSettingsDataStore.updateAiPersonaMemories] 原子更新，
+     *   与用户手动编辑/清空并发时不会互相覆盖。
+     */
+    private fun maybeUpdateMemory(session: ChatSession?) {
+        if (session == null || session.isGroup) return
+        val key = computeShipKey(session)
+        val messages = _chatState.value.messages
+        if (messages.size < MEMORY_TOTAL_THRESHOLD) return
+
+        val memory = personaMemories.value[key]
+        // 定位已摘要进度：优先按时间戳锚在当前列表重定位（防头部截断的下标漂移），锚失效回退纯下标
+        val from = memory?.summarizedLastTs?.takeIf { it > 0 }?.let { ts ->
+            var lastMatchIdx = -1
+            messages.forEachIndexed { i, m -> if (m.timestamp <= ts) lastMatchIdx = i }
+            if (lastMatchIdx >= 0) lastMatchIdx + 1
+            else memory.summarizedCount.coerceAtMost(messages.size)
+        } ?: (memory?.summarizedCount ?: 0).coerceAtMost(messages.size)
+        val to = messages.size - MEMORY_KEEP_RECENT
+        if (to - from < MEMORY_MIN_NEW) return
+        // 用户消息时间戳可能相同（同毫秒连发），确保锚至少推进一条，避免原地空转
+        if (memory != null && to == from && messages.isNotEmpty() &&
+            messages[to - 1].timestamp <= memory.summarizedLastTs
+        ) return
+
+        if (!memorySummarizingKeys.add(key)) return
+        val transcript = buildMemoryTranscript(messages.subList(from, to))
+        if (transcript.isBlank()) {
+            memorySummarizingKeys.remove(key)
+            return
+        }
+        val existingMemory = memory?.text.orEmpty()
+
+        viewModelScope.launch {
+            try {
+                // 配置隔离：使用该会话自身的 API 快照，回退全局默认（与 callApi 同语义）
+                val apiKeyCfg = session.apiKey.ifBlank { settings.aiApiKey.first() }
+                val baseUrl = session.apiUrl.ifBlank { settings.aiCustomBaseUrl.first() }.trim()
+                val model = session.model.ifBlank { settings.aiModel.first() }.ifBlank { DEFAULT_MODEL }
+                if (apiKeyCfg.isBlank() || baseUrl.isBlank()) {
+                    Log.w(TAG, "Memory summarize skipped: API not configured")
+                    return@launch
+                }
+                val request = ChatCompletionRequest(
+                    url = buildFullApiUrl(baseUrl),
+                    apiKey = apiKeyCfg,
+                    model = model,
+                    maxTokens = 512,
+                    temperature = 0.3f,
+                    messages = listOf(
+                        ChatRoleMessage(role = "system", content = MEMORY_SUMMARY_SYSTEM_PROMPT),
+                        ChatRoleMessage(
+                            role = "user",
+                            content = buildString {
+                                if (existingMemory.isNotBlank()) {
+                                    append("【已有记忆（在其基础上合并更新，不要丢失仍然有效的信息）】\n")
+                                    append(existingMemory)
+                                    append("\n\n")
+                                }
+                                append("【新增对话记录】\n")
+                                append(transcript)
+                            }
+                        )
+                    )
+                )
+                val result = apiRepository.chatCompletion(request, tag = "memory")
+                val newMemory = (result as? JiuxinApiResult.Success)?.content?.trim().orEmpty()
+                if (newMemory.isBlank()) {
+                    Log.w(TAG, "Memory summarize returned empty, progress not advanced")
+                    return@launch
+                }
+                val lastTs = messages.getOrNull(to - 1)?.timestamp ?: 0L
+                settings.updateAiPersonaMemories { cur ->
+                    val old = cur[key]
+                    cur + (key to PersonaMemory(
+                        text = newMemory.take(MEMORY_MAX_CHARS),
+                        summarizedCount = maxOf(old?.summarizedCount ?: 0, to),
+                        summarizedLastTs = maxOf(old?.summarizedLastTs ?: 0L, lastTs),
+                        updatedAt = System.currentTimeMillis()
+                    ))
+                }
+                Log.d(TAG, "Persona memory updated for $key (${-from + to} messages summarized)")
+            } catch (e: Exception) {
+                Log.w(TAG, "Memory summarize failed, will retry on next trigger", e)
+            } finally {
+                memorySummarizingKeys.remove(key)
+            }
+        }
+    }
+
+    /** 把消息列表转为摘要用对话记录（过滤系统消息，语音/表情包转为描述） */
+    private fun buildMemoryTranscript(messages: List<ChatMessage>): String {
+        val builder = StringBuilder()
+        for (m in messages) {
+            when (m.type) {
+                ChatMessageType.USER.name -> builder.append("指挥官：").append(m.content).append('\n')
+                ChatMessageType.AI.name -> builder.append("舰娘：").append(m.content).append('\n')
+                ChatMessageType.VOICE.name -> if (m.dialogue.isNotBlank()) {
+                    builder.append("舰娘（发了语音）：").append(m.dialogue).append('\n')
+                }
+                ChatMessageType.STICKER.name -> builder.append("舰娘（发了表情包）\n")
+                else -> Unit // SYSTEM 等类型不入记忆
+            }
+        }
+        return if (builder.length > MEMORY_TRANSCRIPT_MAX_CHARS) {
+            "（更早内容略）\n" + builder.substring(builder.length - MEMORY_TRANSCRIPT_MAX_CHARS)
+        } else {
+            builder.toString()
         }
     }
 

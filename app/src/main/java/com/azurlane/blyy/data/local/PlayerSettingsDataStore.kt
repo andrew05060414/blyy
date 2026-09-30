@@ -126,6 +126,8 @@ class PlayerSettingsDataStore @Inject constructor(
         private val AI_API_CONFIGS_KEY = stringPreferencesKey("ai_api_configs")
         // 多套舰娘人格配置列表（独立于 API 配置，可组合）
         private val AI_PERSONA_CONFIGS_KEY = stringPreferencesKey("ai_persona_configs")
+        // 舰娘长期记忆（key = 舰娘身份 shipKey，value = PersonaMemory）
+        private val AI_PERSONA_MEMORIES_KEY = stringPreferencesKey("ai_persona_memories")
         // 用户（指挥官）配置
         private val USER_NAME_KEY = stringPreferencesKey("user_name")
         private val USER_AVATAR_URL_KEY = stringPreferencesKey("user_avatar_url")
@@ -663,6 +665,38 @@ class PlayerSettingsDataStore @Inject constructor(
                 emptyList()
             }
             prefs[AI_PERSONA_CONFIGS_KEY] = lenientJson.encodeToString(transform(current))
+        }
+    }
+
+    // ── 舰娘长期记忆管理 ──
+
+    /** 所有舰娘的长期记忆（key = computeShipKey 身份标识） */
+    val aiPersonaMemories: Flow<Map<String, com.azurlane.blyy.data.model.PersonaMemory>> = safeData.map { prefs ->
+        val json = prefs[AI_PERSONA_MEMORIES_KEY] ?: "{}"
+        try {
+            lenientJson.decodeFromString<Map<String, com.azurlane.blyy.data.model.PersonaMemory>>(json)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to decode persona memories", e)
+            emptyMap()
+        }
+    }
+
+    /**
+     * 长期记忆原子更新，机制见 [updateAiJiuxinPresets]。
+     * 摘要写入与用户手动编辑/清空可能并发，必须基于 edit 事务内的最新落盘值变换。
+     */
+    suspend fun updateAiPersonaMemories(
+        transform: (Map<String, com.azurlane.blyy.data.model.PersonaMemory>) -> Map<String, com.azurlane.blyy.data.model.PersonaMemory>
+    ) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[AI_PERSONA_MEMORIES_KEY] ?: "{}"
+            val current = try {
+                lenientJson.decodeFromString<Map<String, com.azurlane.blyy.data.model.PersonaMemory>>(json)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to decode persona memories during atomic update, treating as empty", e)
+                emptyMap()
+            }
+            prefs[AI_PERSONA_MEMORIES_KEY] = lenientJson.encodeToString(transform(current))
         }
     }
 

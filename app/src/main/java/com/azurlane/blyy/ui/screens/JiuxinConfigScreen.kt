@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
+import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Check
@@ -170,6 +171,12 @@ fun JiuxinConfigScreen(
     var personaConfigNameInput by remember { mutableStateOf("") }
     var showClearPersonaConfirm by remember { mutableStateOf(false) }
 
+    // 长期记忆管理状态
+    val personaMemory by viewModel.currentPersonaMemory.collectAsStateWithLifecycle()
+    var showEditMemoryDialog by remember { mutableStateOf(false) }
+    var memoryTextInput by remember { mutableStateOf("") }
+    var showClearMemoryConfirm by remember { mutableStateOf(false) }
+
     // ── 分区导航状态：null 表示主菜单，非 null 表示当前展开的分区 ──
     var activeSection by remember { mutableStateOf<ConfigSection?>(null) }
 
@@ -282,6 +289,14 @@ fun JiuxinConfigScreen(
                         onPickAvatar = { showAvatarPicker = true },
                         onSaveJiuxinName = viewModel::saveJiuxinName,
                         onSaveSystemPrompt = viewModel::saveSystemPrompt,
+                        memoryText = personaMemory?.text.orEmpty(),
+                        memoryUpdatedAt = personaMemory?.updatedAt ?: 0L,
+                        onEditMemory = {
+                            memoryTextInput = personaMemory?.text.orEmpty()
+                            showEditMemoryDialog = true
+                        },
+                        onSaveMemory = { viewModel.savePersonaMemoryText(it) },
+                        onClearMemory = { showClearMemoryConfirm = true },
                         onSavePersonaConfig = {
                             personaConfigNameInput = jiuxinName
                             editingPersonaConfig = null
@@ -627,6 +642,60 @@ fun JiuxinConfigScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearPersonaConfirm = false }) { Text("取消") }
+            }
+        )
+    }
+    // 编辑长期记忆对话框
+    if (showEditMemoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditMemoryDialog = false },
+            title = { Text("编辑长期记忆") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.Sm)) {
+                    Text(
+                        "这段记忆会注入舰娘的每次对话。自动摘要也会在此基础上合并更新，可以放心手工修订。",
+                        style = AppTypography.BodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    StableOutlinedTextField(
+                        value = memoryTextInput,
+                        onValueChange = { memoryTextInput = it },
+                        modifier = Modifier.fillMaxWidth().height(160.dp),
+                        label = { Text("记忆内容（上限 1200 字）") },
+                        placeholder = { Text("她喜欢被称呼……你们聊过……约定了……") },
+                        textStyle = AppTypography.BodyMedium,
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(AppSpacing.Corner.Sm)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.savePersonaMemoryText(memoryTextInput)
+                    showEditMemoryDialog = false
+                    Toast.makeText(context, "记忆已保存", Toast.LENGTH_SHORT).show()
+                }) { Text("保存", color = MaterialTheme.colorScheme.primary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditMemoryDialog = false }) { Text("取消") }
+            }
+        )
+    }
+    // 清空长期记忆确认对话框
+    if (showClearMemoryConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearMemoryConfirm = false },
+            title = { Text("清空长期记忆") },
+            text = { Text("确定要清空「${jiuxinName.ifBlank { "当前舰娘" }}」的长期记忆吗？她会忘记跨会话记住的内容，后续聊天会重新积累。此操作不可撤销。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.clearPersonaMemory()
+                    showClearMemoryConfirm = false
+                    Toast.makeText(context, "已清空长期记忆", Toast.LENGTH_SHORT).show()
+                }) { Text("清空", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearMemoryConfirm = false }) { Text("取消") }
             }
         )
     }
@@ -1235,6 +1304,8 @@ private fun PersonaSection(
     jiuxinName: String,
     systemPrompt: String,
     personaConfigs: List<PersonaConfig>,
+    memoryText: String,
+    memoryUpdatedAt: Long,
     voiceEnabled: Boolean,
     voiceRandomChance: Float,
     voiceKeywords: String,
@@ -1245,6 +1316,9 @@ private fun PersonaSection(
     onPickAvatar: () -> Unit,
     onSaveJiuxinName: (String) -> Unit,
     onSaveSystemPrompt: (String) -> Unit,
+    onEditMemory: () -> Unit,
+    onSaveMemory: (String) -> Unit,
+    onClearMemory: () -> Unit,
     onSavePersonaConfig: () -> Unit,
     onApplyPersonaConfig: (PersonaConfig) -> Unit,
     onEditPersonaConfig: (PersonaConfig) -> Unit,
@@ -1306,6 +1380,71 @@ private fun PersonaSection(
                             style = AppTypography.LabelMedium,
                             color = MaterialTheme.colorScheme.error
                         )
+                    }
+                }
+            }
+        }
+
+        // ── 长期记忆（跨会话自动摘要，可手动编辑/清空） ──
+        BlyySectionPanel(title = "长期记忆", icon = Icons.Rounded.AutoStories, accentColor = MaterialTheme.colorScheme.secondary) {
+            Column(modifier = Modifier.fillMaxWidth().padding(AppSpacing.Lg), verticalArrangement = Arrangement.spacedBy(AppSpacing.Md)) {
+                Text(
+                    "聊天积累后，舰娘会自动把较早的对话提炼为记忆，跨会话记住你们的称呼、话题与约定。清空聊天记录不会删除记忆。",
+                    style = AppTypography.BodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (memoryText.isNotBlank()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(AppSpacing.Corner.Md))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
+                            .padding(AppSpacing.Md),
+                        verticalArrangement = Arrangement.spacedBy(AppSpacing.Xs)
+                    ) {
+                        Text(
+                            memoryText,
+                            style = AppTypography.BodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+                        )
+                        if (memoryUpdatedAt > 0L) {
+                            Text(
+                                "更新于 " + java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                                    .format(java.util.Date(memoryUpdatedAt)) + " · 共 ${memoryText.length} 字",
+                                style = AppTypography.LabelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        "暂无记忆。与舰娘多聊几轮（约 40 条消息后）会自动生成；也可以现在亲手写下她的初始记忆。",
+                        style = AppTypography.BodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = onEditMemory,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Icon(Icons.Rounded.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.secondary)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(if (memoryText.isNotBlank()) "编辑记忆" else "写下初始记忆", style = AppTypography.LabelMedium, color = MaterialTheme.colorScheme.secondary)
+                    }
+                    if (memoryText.isNotBlank()) {
+                        TextButton(
+                            onClick = onClearMemory,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Icon(Icons.Rounded.DeleteSweep, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("清空记忆", style = AppTypography.LabelMedium, color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }
