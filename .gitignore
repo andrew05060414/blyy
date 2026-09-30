@@ -149,3 +149,24 @@ scripts/oxipng-*-*/
 
 # Spine SD 动画资源（体积过大，不纳入版本控制，按需本地放置）
 sd/
+
+# 本地调试临时产物（UI 布局 dump / 截图 / 日志 / 提交信息草稿，不属于项目源码）
+scripts/
+source/
+test_screenshots/
+menu_state.png
+ui_main.xml
+ui_menu.xml
+ui_menu_summary.txt
+ui_summary.txt
+.git_commit_msg_preview.txt
+ui_upgrade_shots/
+
+# 头像匹配分析的本地临时产物（测试报告/失配清单，不属于项目源码）
+misses.txt
+orphans*.txt
+suspects*.txt
+1.txt
+
+# ZCode 工具本地忽略配置（本地工具产物，不入库）
+.zcodeignore
