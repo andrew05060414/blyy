@@ -9,15 +9,17 @@
 </p>
 
 <p align="center">
-  <a href="#-功能特性">功能特性</a> •
-  <a href="#-截图预览">截图预览</a> •
-  <a href="#-使用说明">使用说明</a> •
-  <a href="#-安装">安装</a> •
-  <a href="#-技术栈">技术栈</a> •
-  <a href="#-项目结构">项目结构</a> •
-  <a href="#-测试">测试</a> •
-  <a href="#-贡献指南">贡献指南</a> •
-  <a href="#-致谢">致谢</a>
+  <a href="#features">功能特性</a> •
+  <a href="#screenshots">截图预览</a> •
+  <a href="#usage">使用说明</a> •
+  <a href="#install">安装</a> •
+  <a href="#tech-stack">技术栈</a> •
+  <a href="#project-structure">项目结构</a> •
+  <a href="#avatar-matcher">头像匹配</a> •
+  <a href="#testing">测试</a> •
+  <a href="#ci">CI</a> •
+  <a href="#contributing">贡献指南</a> •
+  <a href="#acknowledgements">致谢</a>
 </p>
 
 <p align="center">
@@ -34,6 +36,8 @@
 
 碧蓝语音（BLYY）是一款专为碧蓝航线玩家设计的多功能舰娘应用，基于 Kotlin 2.1 + Jetpack Compose 构建，涵盖**语音播放、舰娘图鉴、秘书舰桌面互动、AI 角色扮演对话、猜舰娘小游戏、水印相机**等能力。应用内置全量舰娘本地头像匹配引擎，支持双主题风格（经典紫色 / 指挥中心 HUD）与流畅的动画体验。
 
+<a id="features"></a>
+
 ## ✨ 功能特性
 
 ### 🏠 底部导航三大主页
@@ -46,7 +50,7 @@
 - 完整舰娘图鉴，按阵营/舰种/稀有度多维筛选，支持搜索
 - **双档案模式**：舰船档案（DOCK）/ 成员档案（STUDENT）动态切换
 - **长按舰娘头像誓约/解除誓约**，誓约后立绘自动切换婚皮
-- **本地头像匹配引擎**：内置 1000+ 高清头像资产，全量 wiki 图鉴 999/999 命中（详见[头像匹配系统](#-头像匹配系统)）
+- **本地头像匹配引擎**：内置 1000+ 高清头像资产，全量 wiki 图鉴 999/999 命中（详见[头像匹配系统](#avatar-matcher)）
 - 骨架屏加载 + 卡片飞入动画
 
 #### 关于（About）
@@ -93,6 +97,8 @@
 - 毛玻璃效果、切角矩形面板、AGSL 深度阴影系统（Depth 阴影令牌/受光渐变/按钮辉光投影）
 - 8dp 网格间距系统、统一动画规范、切角形状（BlyyShapes）
 
+<a id="screenshots"></a>
+
 ## 📸 截图预览
 
 | 船坞界面 | 后宅界面 | 语音播放界面 |
@@ -111,6 +117,8 @@
 | Gradle | 9.6.1（项目自带 wrapper，无需手动安装） |
 | Android SDK | minSdk 24 / targetSdk 35 / compileSdk 36 |
 | 设备 | Android 7.0 (API 24) 或更高 |
+
+<a id="install"></a>
 
 ## 📥 安装
 
@@ -146,6 +154,8 @@
 
 前往 [Releases](https://github.com/oneroomlife/blyy/releases) 或应用内「关于 → 检查更新」下载最新 APK（当前版本 `2.4.1`，发布前请同步修改 `app/build.gradle.kts` 中的 `versionName`）。
 
+<a id="usage"></a>
+
 ## 📖 使用说明
 
 ### 导航结构
@@ -180,6 +190,8 @@
 2. 授予悬浮窗权限后，舰娘小人常驻屏幕，点击随机播放语音
 3. 「随机秘书舰」页面可开启每日按稀有度自动抽取
 
+<a id="tech-stack"></a>
+
 ## 🏗️ 技术栈
 
 | 技术 | 版本 | 用途 |
@@ -202,6 +214,8 @@
 | [compose-shimmer](https://github.com/valentinilk/compose-shimmer) | 1.3.3 | 骨架屏动画 |
 
 完整依赖与许可证信息见 [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)，架构设计详见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+
+<a id="project-structure"></a>
 
 ## 📁 项目结构
 
@@ -264,6 +278,8 @@ blyy/
 ├── CODE_OF_CONDUCT.md / CONTRIBUTING.md / LICENSE / SECURITY.md
 ```
 
+<a id="avatar-matcher"></a>
+
 ## 🧩 头像匹配系统
 
 应用内置离线优先的舰娘头像匹配引擎，是船坞/后宅/秘书舰等所有场景的立绘来源：
@@ -272,6 +288,8 @@ blyy/
 - **十级匹配策略**：手动映射 → 特殊变体（META/μ兵装/幼女）→ 改造/尾部标记 → 原始名/拼音精确 → 去后缀变体 → 包含/反向包含/模糊子串兜底
 - **皮肤形态硬规则**：META/μ兵装/改造立绘缺失时拒绝回退基础形态（避免错图），改走网络 URL 兜底
 - **全量回归测试**：`AvatarMatcherTest` 用 wiki 图鉴 999 个舰名逐一校验，当前 **999/999 命中、零碰撞**；新增资源或舰娘后运行 `./gradlew :app:testDebugUnitTest --tests "*AvatarMatcherTest*"` 防回归
+
+<a id="testing"></a>
 
 ## 🧪 测试
 
@@ -285,9 +303,13 @@ blyy/
 
 提交前建议运行 `./gradlew :app:lint`（项目带 lint-baseline.xml）。
 
+<a id="ci"></a>
+
 ## ⚙️ CI
 
 GitHub Actions（[android.yml](.github/workflows/android.yml)）在 push / PR 时自动以 JDK 17 构建并执行检查。
+
+<a id="contributing"></a>
 
 ## 🤝 贡献指南
 
@@ -352,6 +374,8 @@ GitHub Actions（[android.yml](.github/workflows/android.yml)）在 push / PR �
 - 如有侵权，请通过 [GitHub Issues](https://github.com/oneroomlife/blyy/issues) 联系删除
 
 **本项目不提供任何游戏资源文件，所有资源均通过网络从公开渠道获取。**
+
+<a id="acknowledgements"></a>
 
 ## 🙏 致谢
 
