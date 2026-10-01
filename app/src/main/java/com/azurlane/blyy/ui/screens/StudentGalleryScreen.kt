@@ -39,11 +39,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -70,11 +68,14 @@ import com.azurlane.blyy.data.model.StudentGalleryVideo
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyEmptyState
 import com.azurlane.blyy.ui.components.BlyyErrorState
+import com.azurlane.blyy.ui.components.BlyySkeletonGrid
 import com.azurlane.blyy.ui.components.BlyyTopBar
 import com.azurlane.blyy.ui.components.ZoomableImage
 import com.azurlane.blyy.ui.theme.*
 import com.azurlane.blyy.viewmodel.StudentGalleryState
 import com.azurlane.blyy.viewmodel.StudentGalleryViewModel
+import com.azurlane.blyy.ui.components.BlyyHaptic
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -181,7 +182,7 @@ fun StudentGalleryScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = LocalIsDark.current
-    val hapticFeedback = LocalHapticFeedback.current
+    val hapticFeedback = rememberBlyyHaptics()
     val configuration = LocalConfiguration.current
 
     val gallery = state.gallery
@@ -251,13 +252,11 @@ fun StudentGalleryScreen(
 
             when {
                 state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 3.dp
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        BlyySkeletonGrid(
+                            minSize = 110.dp,
+                            modifier = Modifier.fillMaxSize(),
+                            itemCount = 12
                         )
                     }
                 }
@@ -296,7 +295,7 @@ fun StudentGalleryScreen(
                         tabs = tabs,
                         selectedTabIndex = selectedTabIndex,
                         onTabSelected = { index ->
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            hapticFeedback(BlyyHaptic.Tick)
                             viewModel.selectTab(index)
                         }
                     )
@@ -335,7 +334,7 @@ fun StudentGalleryScreen(
                                 tab = tab,
                                 modifier = Modifier.fillMaxSize(),
                                 onVideoClick = { video ->
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    hapticFeedback(BlyyHaptic.Tick)
                                     playingVideo = video
                                 }
                             )
@@ -352,11 +351,11 @@ fun StudentGalleryScreen(
                                 columnCount = columnCount,
                                 isEmoji = isEmoji,
                                 onImageClick = { image ->
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    hapticFeedback(BlyyHaptic.Tick)
                                     viewerImageUrl = image.url
                                 },
                                 onImageLongClick = { image ->
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    hapticFeedback(BlyyHaptic.LongPress)
                                     downloadImage(image.url, image.description)
                                 }
                             )
@@ -371,7 +370,7 @@ fun StudentGalleryScreen(
                 imageUrl = url,
                 onDismiss = { viewerImageUrl = null },
                 onDownload = {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    hapticFeedback(BlyyHaptic.LongPress)
                     downloadImage(url, "fullview")
                 }
             )
@@ -383,7 +382,7 @@ fun StudentGalleryScreen(
                 videoTitle = video.title,
                 videoDescription = video.description,
                 onDismiss = {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    hapticFeedback(BlyyHaptic.Tick)
                     playingVideo = null
                 }
             )
@@ -1088,7 +1087,7 @@ private fun VideoPlayerOverlay(
     val activity = context as? Activity
     val isDark = LocalIsDark.current
     val glassSurface = if (isDark) AppColors.GlassSurfaceDark else AppColors.GlassSurfaceLight
-    val hapticFeedback = LocalHapticFeedback.current
+    val hapticFeedback = rememberBlyyHaptics()
     val configuration = LocalConfiguration.current
 
     // 横屏时使用更贴合的宽高比，竖屏时 16:9 居中
@@ -1329,7 +1328,7 @@ private fun VideoPlayerOverlay(
             ) {
                 Surface(
                     onClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        hapticFeedback(BlyyHaptic.Tick)
                         onDismiss()
                     },
                     shape = CircleShape,
@@ -1374,7 +1373,7 @@ private fun VideoPlayerOverlay(
 
                 Surface(
                     onClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        hapticFeedback(BlyyHaptic.Tick)
                         forceLandscape = !forceLandscape
                     },
                     shape = CircleShape,

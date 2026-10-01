@@ -88,6 +88,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyConfirmDialog
+import com.azurlane.blyy.ui.components.BlyyHaptic
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
 import com.azurlane.blyy.ui.components.BlyyTopBar
 import com.azurlane.blyy.ui.theme.AppColors
 import com.azurlane.blyy.ui.theme.AppSpacing
@@ -148,6 +150,16 @@ fun GuessByVoiceScreen(
 
     // 退出二次确认对话框状态：仅在结算弹窗中点击"退出"时触发
     var showExitConfirm by remember { mutableStateOf(false) }
+    val haptic = rememberBlyyHaptics()
+
+    // 作答结果触觉反馈：答对确认、答错重震
+    LaunchedEffect(state.lastResult) {
+        when (state.lastResult) {
+            GuessResult.CORRECT -> haptic(BlyyHaptic.Confirm)
+            GuessResult.WRONG -> haptic(BlyyHaptic.Heavy)
+            else -> Unit
+        }
+    }
 
     if (state.showSettlement) {
         ModernVoiceSettlementDialog(
@@ -186,8 +198,12 @@ fun GuessByVoiceScreen(
         },
         onHistory = onHistory,
         onInputChange = viewModel::onInputChanged,
-        onSubmit = { viewModel.checkAnswer() },
+        onSubmit = {
+            haptic(BlyyHaptic.Confirm)
+            viewModel.checkAnswer()
+        },
         onNext = {
+            haptic(BlyyHaptic.Tick)
             currentToast?.cancel()
             currentToast = null
             // 统一调用 ViewModel 的 goToNextQuestion，由 VM 内部读取最新状态计数
@@ -368,11 +384,11 @@ private fun VoiceDifficultySelector(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Lg),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(AppSpacing.Lg),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -416,7 +432,7 @@ private fun VoiceDifficultyChip(
     Surface(
         onClick = onClick,
         modifier = modifier.scale(scale),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Md),
         color = if (isSelected) {
             MaterialTheme.colorScheme.secondaryContainer
         } else {
@@ -432,7 +448,7 @@ private fun VoiceDifficultyChip(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(AppSpacing.Md),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -462,11 +478,11 @@ private fun VoiceDifficultyChip(
 @Composable
 private fun VoiceScoreChip(totalScore: Int) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Xl),
         color = MaterialTheme.colorScheme.secondaryContainer
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = AppSpacing.Md, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -503,12 +519,12 @@ private fun VoicePlayerCard(
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Xxl),
         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
         shadowElevation = 8.dp
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(AppSpacing.Xxl),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
@@ -590,11 +606,11 @@ private fun VoicePlayerCard(
 private fun VoiceScoreBanner(score: Int) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Md),
         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Sm),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -610,7 +626,7 @@ private fun HintsSection(hints: List<Pair<String, String>>) {
         hints.forEachIndexed { index, (label, value) ->
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(AppSpacing.Corner.Lg),
                 color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.25f)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -699,12 +715,12 @@ private fun VoiceCorrectCard(score: Int, rewardImageUrl: String?) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(AppSpacing.Corner.Xl),
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
             shadowElevation = 6.dp
         ) {
             Row(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier.padding(AppSpacing.Xl),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -752,8 +768,8 @@ private fun VoiceCorrectCard(score: Int, rewardImageUrl: String?) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(3f / 4f)
-                    .clip(RoundedCornerShape(20.dp))
-                    .shadow(12.dp, RoundedCornerShape(20.dp)),
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Xl))
+                    .shadow(12.dp, RoundedCornerShape(AppSpacing.Corner.Xl)),
                 contentScale = ContentScale.Fit
             )
         }
@@ -765,11 +781,11 @@ private fun VoiceAnswerCard(shipName: String, rewardImageUrl: String?) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(AppSpacing.Corner.Xl),
             color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
         ) {
             Row(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(AppSpacing.Lg),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -815,8 +831,8 @@ private fun VoiceAnswerCard(shipName: String, rewardImageUrl: String?) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(3f / 4f)
-                    .clip(RoundedCornerShape(20.dp))
-                    .shadow(12.dp, RoundedCornerShape(20.dp)),
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Xl))
+                    .shadow(12.dp, RoundedCornerShape(AppSpacing.Corner.Xl)),
                 contentScale = ContentScale.Fit
             )
         }
@@ -827,11 +843,11 @@ private fun VoiceAnswerCard(shipName: String, rewardImageUrl: String?) {
 private fun VoiceWrongCard() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Lg),
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(AppSpacing.Lg),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -1009,11 +1025,11 @@ private fun ModernVoiceSettlementDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(AppSpacing.Corner.Xl),
                     color = MaterialTheme.colorScheme.secondaryContainer
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier.padding(AppSpacing.Xxl),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
@@ -1050,11 +1066,11 @@ private fun ModernVoiceSettlementDialog(
                 if (score.totalQuestions > 0) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(AppSpacing.Corner.Md),
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(AppSpacing.Md),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("平均得分", style = AppTypography.LabelMedium)
@@ -1071,7 +1087,7 @@ private fun ModernVoiceSettlementDialog(
         confirmButton = {
             Button(
                 onClick = onContinue,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(AppSpacing.Corner.Xs2),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondary
                 )
@@ -1082,7 +1098,7 @@ private fun ModernVoiceSettlementDialog(
         dismissButton = {
             OutlinedButton(
                 onClick = onExit,
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(AppSpacing.Corner.Xs2)
             ) {
                 Text("退出", style = AppTypography.LabelLarge)
             }
@@ -1094,12 +1110,12 @@ private fun ModernVoiceSettlementDialog(
 private fun VoiceStatItemContent(label: String, value: String, subValue: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Xs2),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Column(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(AppSpacing.Md)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

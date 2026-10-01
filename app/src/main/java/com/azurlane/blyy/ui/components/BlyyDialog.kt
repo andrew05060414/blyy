@@ -70,7 +70,7 @@ fun BlyyConfirmDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        shape = if (isCommandCenter) BlyyShapes.Dialog else RoundedCornerShape(28.dp),
+        shape = if (isCommandCenter) BlyyShapes.Dialog else BlyyShapes.DialogClassic,
         containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text(
@@ -126,7 +126,7 @@ fun BlyyDialog(
     BasicAlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.clip(
-            if (isCommandCenter) BlyyShapes.Dialog else RoundedCornerShape(28.dp)
+            if (isCommandCenter) BlyyShapes.Dialog else BlyyShapes.DialogClassic
         )
     ) {
         Box(
@@ -141,7 +141,7 @@ fun BlyyDialog(
                             MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
                         )
                     ),
-                    shape = if (isCommandCenter) BlyyShapes.Dialog else RoundedCornerShape(28.dp)
+                    shape = if (isCommandCenter) BlyyShapes.Dialog else BlyyShapes.DialogClassic
                 )
         ) {
             content()
@@ -155,7 +155,7 @@ fun BlyyDialog(
  * 设计规范：
  * - 指挥中心风格：切角顶部 + 渐变描边
  * - 经典风格：标准圆角顶部
- * - 统一拖拽手柄样式
+ * - 统一拖拽手柄样式（[BlyyDragHandle]）
  *
  * @param onDismissRequest 关闭回调
  * @param content 弹窗内容
@@ -185,22 +185,29 @@ fun BlyyBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        shape = if (isCommandCenter) BlyyShapes.BottomSheet else RoundedCornerShape(28.dp),
+        shape = if (isCommandCenter) BlyyShapes.BottomSheet else BlyyShapes.BottomSheetClassic,
         containerColor = containerColor,
-        dragHandle = {
-            // 统一拖拽手柄
-            Box(
-                modifier = Modifier
-                    .padding(vertical = AppSpacing.Sm)
-                    .width(40.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                    )
-            )
-        }
+        dragHandle = { BlyyDragHandle() }
     ) {
         content()
     }
+}
+
+/**
+ * 统一拖拽手柄 — 全应用底部弹窗/自绘面板的唯一手柄实现。
+ *
+ * 尺寸规范：40×4dp 胶囊，垂直留白 [AppSpacing.Sm]，圆角 [AppSpacing.Corner.Xxs]。
+ */
+@Composable
+fun BlyyDragHandle(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .padding(vertical = AppSpacing.Sm)
+            .width(AppSpacing.Xxxxl)
+            .height(AppSpacing.Xs)
+            .clip(RoundedCornerShape(AppSpacing.Corner.Xxs))
+            .background(
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            )
+    )
 }

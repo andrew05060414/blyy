@@ -66,6 +66,7 @@ import com.azurlane.blyy.data.model.ApiConfig
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyPanel
 import com.azurlane.blyy.ui.components.BlyyPrimaryButton
+import com.azurlane.blyy.ui.components.BlyyEntrance
 import com.azurlane.blyy.ui.components.BlyySectionPanel
 import com.azurlane.blyy.ui.components.BlyyTopBar
 import com.azurlane.blyy.ui.components.StableOutlinedTextField
@@ -163,349 +164,355 @@ fun JiuxinShipConfigScreen(
                         }
                     }
 
-                    // ── 人格与名称 ──
-                    BlyySectionPanel(
-                        title = "人格与名称",
-                        icon = Icons.Rounded.Psychology,
-                        accentColor = MaterialTheme.colorScheme.secondary
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(AppSpacing.Lg),
-                            verticalArrangement = Arrangement.spacedBy(AppSpacing.Md)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(AppSpacing.Md)
+                    BlyyEntrance(index = 0) {
+        // ── 人格与名称 ──
+                            BlyySectionPanel(
+                                title = "人格与名称",
+                                icon = Icons.Rounded.Psychology,
+                                accentColor = MaterialTheme.colorScheme.secondary
                             ) {
-                                ShipAvatarDisplay(
-                                    avatarUrl = currentSession.avatarUrl,
-                                    size = 56.dp,
-                                    placeholderIcon = Icons.Rounded.Person,
-                                    placeholderIconSize = 24.dp,
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                                    iconTint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                    showBorder = true,
-                                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                                    onClick = { showAvatarPicker = true }
-                                )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("舰娘头像", style = AppTypography.TitleSmall, fontWeight = FontWeight.Medium)
-                                    Text(
-                                        text = if (currentSession.avatarUrl.isNotBlank()) "已选择头像" else "点击选择舰娘头像或上传图片",
-                                        style = AppTypography.BodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(AppSpacing.Lg),
+                                verticalArrangement = Arrangement.spacedBy(AppSpacing.Md)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.Md)
+                                ) {
+                                    ShipAvatarDisplay(
+                                        avatarUrl = currentSession.avatarUrl,
+                                        size = 56.dp,
+                                        placeholderIcon = Icons.Rounded.Person,
+                                        placeholderIconSize = 24.dp,
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                        iconTint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                        showBorder = true,
+                                        borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                        onClick = { showAvatarPicker = true }
                                     )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("舰娘头像", style = AppTypography.TitleSmall, fontWeight = FontWeight.Medium)
+                                        Text(
+                                            text = if (currentSession.avatarUrl.isNotBlank()) "已选择头像" else "点击选择舰娘头像或上传图片",
+                                            style = AppTypography.BodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
-                            }
 
-                            StableOutlinedTextField(
-                                value = currentSession.jiuxinName,
-                                onValueChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(jiuxinName = it) } },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text("舰娘名称") },
-                                placeholder = { Text("啾信助手") },
-                                singleLine = true,
-                                textStyle = AppTypography.BodyMedium,
-                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = primaryColor),
-                                shape = RoundedCornerShape(AppSpacing.Corner.Sm)
-                            )
-                            StableOutlinedTextField(
-                                value = currentSession.systemPrompt,
-                                onValueChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(systemPrompt = it) } },
-                                modifier = Modifier.fillMaxWidth().height(120.dp),
-                                label = { Text("人格提示词") },
-                                placeholder = { Text("描述舰娘的人格和行为方式...") },
-                                textStyle = AppTypography.BodyMedium,
-                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = primaryColor),
-                                shape = RoundedCornerShape(AppSpacing.Corner.Sm)
-                            )
+                                StableOutlinedTextField(
+                                    value = currentSession.jiuxinName,
+                                    onValueChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(jiuxinName = it) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text("舰娘名称") },
+                                    placeholder = { Text("啾信助手") },
+                                    singleLine = true,
+                                    textStyle = AppTypography.BodyMedium,
+                                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = primaryColor),
+                                    shape = RoundedCornerShape(AppSpacing.Corner.Sm)
+                                )
+                                StableOutlinedTextField(
+                                    value = currentSession.systemPrompt,
+                                    onValueChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(systemPrompt = it) } },
+                                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                                    label = { Text("人格提示词") },
+                                    placeholder = { Text("描述舰娘的人格和行为方式...") },
+                                    textStyle = AppTypography.BodyMedium,
+                                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = primaryColor),
+                                    shape = RoundedCornerShape(AppSpacing.Corner.Sm)
+                                )
+                            }
                         }
-                    }
+                        }
 
-                    // ── API 配置（列表选择模式，无全局配置选项） ──
-                    BlyySectionPanel(
-                        title = "API 配置",
-                        icon = Icons.Rounded.Key,
-                        accentColor = primaryColor
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(AppSpacing.Lg),
-                            verticalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
-                        ) {
-                            // 已保存的 API 配置列表
-                            if (apiConfigs.isNotEmpty()) {
-                                apiConfigs.forEach { config ->
-                                    val isSelected =
-                                        currentSession.apiUrl == config.apiUrl &&
-                                        currentSession.apiKey == config.apiKey &&
-                                        currentSession.model == config.model
-                                    ApiConfigOptionRow(
-                                        name = config.name.ifBlank { "未命名配置" },
-                                        subtitle = buildString {
-                                            if (config.model.isNotBlank()) append(config.model)
-                                            if (config.apiUrl.isNotBlank()) {
-                                                if (isNotEmpty()) append(" · ")
-                                                val url = config.apiUrl
-                                                append(if (url.length > 40) url.take(40) + "…" else url)
-                                            }
-                                        },
-                                        isSelected = isSelected,
-                                        primaryColor = primaryColor,
-                                        selectedBg = selectedBg,
-                                        selectedBorder = selectedBorder,
-                                        onClick = { viewModel.applyApiConfigToCurrentSession(config) }
+                    BlyyEntrance(index = 1) {
+        // ── API 配置（列表选择模式，无全局配置选项） ──
+                            BlyySectionPanel(
+                                title = "API 配置",
+                                icon = Icons.Rounded.Key,
+                                accentColor = primaryColor
+                            ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(AppSpacing.Lg),
+                                verticalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
+                            ) {
+                                // 已保存的 API 配置列表
+                                if (apiConfigs.isNotEmpty()) {
+                                    apiConfigs.forEach { config ->
+                                        val isSelected =
+                                            currentSession.apiUrl == config.apiUrl &&
+                                            currentSession.apiKey == config.apiKey &&
+                                            currentSession.model == config.model
+                                        ApiConfigOptionRow(
+                                            name = config.name.ifBlank { "未命名配置" },
+                                            subtitle = buildString {
+                                                if (config.model.isNotBlank()) append(config.model)
+                                                if (config.apiUrl.isNotBlank()) {
+                                                    if (isNotEmpty()) append(" · ")
+                                                    val url = config.apiUrl
+                                                    append(if (url.length > 40) url.take(40) + "…" else url)
+                                                }
+                                            },
+                                            isSelected = isSelected,
+                                            primaryColor = primaryColor,
+                                            selectedBg = selectedBg,
+                                            selectedBorder = selectedBorder,
+                                            onClick = { viewModel.applyApiConfigToCurrentSession(config) }
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        "暂无已保存的 API 配置，请在总设置中添加",
+                                        style = AppTypography.BodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(vertical = AppSpacing.Sm)
                                     )
                                 }
-                            } else {
-                                Text(
-                                    "暂无已保存的 API 配置，请在总设置中添加",
-                                    style = AppTypography.BodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(vertical = AppSpacing.Sm)
-                                )
-                            }
 
-                            // 当前生效配置摘要 + 模型选择 + 测试
-                            Spacer(modifier = Modifier.height(AppSpacing.Xs))
-                            val currentApiInfo = if (currentSession.apiUrl.isBlank()) {
-                                "请选择一个 API 配置"
-                            } else {
-                                val cfgName = apiConfigs.firstOrNull { it.apiUrl == currentSession.apiUrl && it.apiKey == currentSession.apiKey }?.name
-                                "当前使用：${cfgName ?: "自定义"}"
-                            }
-                            Text(currentApiInfo, style = AppTypography.LabelSmall, color = primaryColor.copy(alpha = 0.7f))
-
-                            // 模型选择（已选择API配置时显示）
-                            if (currentSession.apiUrl.isNotBlank()) {
+                                // 当前生效配置摘要 + 模型选择 + 测试
                                 Spacer(modifier = Modifier.height(AppSpacing.Xs))
-                                Box(modifier = Modifier.fillMaxWidth()) {
-                                    StableOutlinedTextField(
-                                        value = currentSession.model,
-                                        onValueChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(model = it) } },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        label = { Text("Model") },
-                                        singleLine = true,
-                                        textStyle = AppTypography.BodyMedium,
-                                        trailingIcon = {
-                                            androidx.compose.material3.IconButton(onClick = { showModelDropdown = !showModelDropdown }) {
-                                                Icon(Icons.AutoMirrored.Rounded.List, "模型列表")
-                                            }
-                                        },
-                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = primaryColor),
-                                        shape = RoundedCornerShape(AppSpacing.Corner.Sm)
-                                    )
-                                    DropdownMenu(
-                                        expanded = showModelDropdown,
-                                        onDismissRequest = { showModelDropdown = false },
-                                        modifier = Modifier.fillMaxWidth(0.8f).heightIn(max = 240.dp)
-                                    ) {
-                                        val state = modelListState
-                                        when (state) {
-                                            is ModelListState.Loading -> {
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            CircularProgressIndicator(
-                                                                modifier = Modifier.size(16.dp),
-                                                                strokeWidth = 2.dp
-                                                            )
-                                                            Spacer(modifier = Modifier.width(AppSpacing.Sm))
-                                                            Text("正在拉取模型列表…", style = AppTypography.BodySmall)
-                                                        }
-                                                    },
-                                                    onClick = {}
-                                                )
-                                            }
-                                            is ModelListState.Error -> {
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Column {
-                                                            Text(
-                                                                "拉取失败：${state.message}",
-                                                                style = AppTypography.BodySmall,
-                                                                color = MaterialTheme.colorScheme.error
-                                                            )
-                                                            Spacer(modifier = Modifier.height(AppSpacing.Xs))
-                                                            Text(
-                                                                "点击重试",
-                                                                style = AppTypography.LabelSmall,
-                                                                color = MaterialTheme.colorScheme.primary
-                                                            )
-                                                        }
-                                                    },
-                                                    onClick = { viewModel.fetchModelsForCurrentSession() }
-                                                )
-                                            }
-                                            is ModelListState.Empty -> {
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Text(
-                                                            "API 返回了空模型列表，点击重新拉取",
-                                                            style = AppTypography.BodySmall,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    },
-                                                    onClick = { viewModel.fetchModelsForCurrentSession() }
-                                                )
-                                            }
-                                            is ModelListState.Success -> {
-                                                if (availableModels.isEmpty()) {
+                                val currentApiInfo = if (currentSession.apiUrl.isBlank()) {
+                                    "请选择一个 API 配置"
+                                } else {
+                                    val cfgName = apiConfigs.firstOrNull { it.apiUrl == currentSession.apiUrl && it.apiKey == currentSession.apiKey }?.name
+                                    "当前使用：${cfgName ?: "自定义"}"
+                                }
+                                Text(currentApiInfo, style = AppTypography.LabelSmall, color = primaryColor.copy(alpha = 0.7f))
+
+                                // 模型选择（已选择API配置时显示）
+                                if (currentSession.apiUrl.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(AppSpacing.Xs))
+                                    Box(modifier = Modifier.fillMaxWidth()) {
+                                        StableOutlinedTextField(
+                                            value = currentSession.model,
+                                            onValueChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(model = it) } },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            label = { Text("Model") },
+                                            singleLine = true,
+                                            textStyle = AppTypography.BodyMedium,
+                                            trailingIcon = {
+                                                androidx.compose.material3.IconButton(onClick = { showModelDropdown = !showModelDropdown }) {
+                                                    Icon(Icons.AutoMirrored.Rounded.List, "模型列表")
+                                                }
+                                            },
+                                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = primaryColor),
+                                            shape = RoundedCornerShape(AppSpacing.Corner.Sm)
+                                        )
+                                        DropdownMenu(
+                                            expanded = showModelDropdown,
+                                            onDismissRequest = { showModelDropdown = false },
+                                            modifier = Modifier.fillMaxWidth(0.8f).heightIn(max = 240.dp)
+                                        ) {
+                                            val state = modelListState
+                                            when (state) {
+                                                is ModelListState.Loading -> {
                                                     DropdownMenuItem(
-                                                        text = { Text("未拉取到模型", style = AppTypography.BodySmall) },
+                                                        text = {
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                CircularProgressIndicator(
+                                                                    modifier = Modifier.size(16.dp),
+                                                                    strokeWidth = 2.dp
+                                                                )
+                                                                Spacer(modifier = Modifier.width(AppSpacing.Sm))
+                                                                Text("正在拉取模型列表…", style = AppTypography.BodySmall)
+                                                            }
+                                                        },
+                                                        onClick = {}
+                                                    )
+                                                }
+                                                is ModelListState.Error -> {
+                                                    DropdownMenuItem(
+                                                        text = {
+                                                            Column {
+                                                                Text(
+                                                                    "拉取失败：${state.message}",
+                                                                    style = AppTypography.BodySmall,
+                                                                    color = MaterialTheme.colorScheme.error
+                                                                )
+                                                                Spacer(modifier = Modifier.height(AppSpacing.Xs))
+                                                                Text(
+                                                                    "点击重试",
+                                                                    style = AppTypography.LabelSmall,
+                                                                    color = MaterialTheme.colorScheme.primary
+                                                                )
+                                                            }
+                                                        },
                                                         onClick = { viewModel.fetchModelsForCurrentSession() }
                                                     )
-                                                } else {
-                                                    availableModels.forEach { model ->
+                                                }
+                                                is ModelListState.Empty -> {
+                                                    DropdownMenuItem(
+                                                        text = {
+                                                            Text(
+                                                                "API 返回了空模型列表，点击重新拉取",
+                                                                style = AppTypography.BodySmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        },
+                                                        onClick = { viewModel.fetchModelsForCurrentSession() }
+                                                    )
+                                                }
+                                                is ModelListState.Success -> {
+                                                    if (availableModels.isEmpty()) {
                                                         DropdownMenuItem(
-                                                            text = { Text(model, style = AppTypography.BodyMedium) },
-                                                            onClick = {
-                                                                viewModel.updateCurrentSessionConfig { s -> s.copy(model = model) }
-                                                                showModelDropdown = false
-                                                            }
+                                                            text = { Text("未拉取到模型", style = AppTypography.BodySmall) },
+                                                            onClick = { viewModel.fetchModelsForCurrentSession() }
                                                         )
+                                                    } else {
+                                                        availableModels.forEach { model ->
+                                                            DropdownMenuItem(
+                                                                text = { Text(model, style = AppTypography.BodyMedium) },
+                                                                onClick = {
+                                                                    viewModel.updateCurrentSessionConfig { s -> s.copy(model = model) }
+                                                                    showModelDropdown = false
+                                                                }
+                                                            )
+                                                        }
                                                     }
                                                 }
+                                                is ModelListState.Idle -> {
+                                                    DropdownMenuItem(
+                                                        text = { Text("点击拉取模型列表", style = AppTypography.BodySmall) },
+                                                        onClick = { viewModel.fetchModelsForCurrentSession() }
+                                                    )
+                                                }
                                             }
-                                            is ModelListState.Idle -> {
-                                                DropdownMenuItem(
-                                                    text = { Text("点击拉取模型列表", style = AppTypography.BodySmall) },
-                                                    onClick = { viewModel.fetchModelsForCurrentSession() }
-                                                )
+                                        }
+                                    }
+                                }
+
+                                BlyyPrimaryButton(
+                                    text = when (connectionState) {
+                                        is ConnectionTestState.Testing -> "测试中..."
+                                        else -> "测试连接"
+                                    },
+                                    onClick = viewModel::testConnectionForCurrentSession,
+                                    enabled = connectionState !is ConnectionTestState.Testing,
+                                    icon = Icons.Rounded.Key,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                when (val state = connectionState) {
+                                    is ConnectionTestState.Success -> {
+                                        BlyyPanel(accentColor = successColor) {
+                                            Row(
+                                                modifier = Modifier.padding(AppSpacing.Md).fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
+                                            ) {
+                                                Icon(Icons.Rounded.Check, null, tint = successColor, modifier = Modifier.size(20.dp))
+                                                Text("连接成功", color = successColor, style = AppTypography.BodyMedium)
                                             }
                                         }
                                     }
-                                }
-                            }
-
-                            BlyyPrimaryButton(
-                                text = when (connectionState) {
-                                    is ConnectionTestState.Testing -> "测试中..."
-                                    else -> "测试连接"
-                                },
-                                onClick = viewModel::testConnectionForCurrentSession,
-                                enabled = connectionState !is ConnectionTestState.Testing,
-                                icon = Icons.Rounded.Key,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            when (val state = connectionState) {
-                                is ConnectionTestState.Success -> {
-                                    BlyyPanel(accentColor = successColor) {
-                                        Row(
-                                            modifier = Modifier.padding(AppSpacing.Md).fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
-                                        ) {
-                                            Icon(Icons.Rounded.Check, null, tint = successColor, modifier = Modifier.size(20.dp))
-                                            Text("连接成功", color = successColor, style = AppTypography.BodyMedium)
+                                    is ConnectionTestState.Error -> {
+                                        BlyyPanel(accentColor = MaterialTheme.colorScheme.error) {
+                                            Row(
+                                                modifier = Modifier.padding(AppSpacing.Md).fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
+                                            ) {
+                                                Icon(Icons.Rounded.BrokenImage, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                                Text(state.message, color = MaterialTheme.colorScheme.error, style = AppTypography.BodySmall)
+                                            }
                                         }
                                     }
+                                    else -> {}
                                 }
-                                is ConnectionTestState.Error -> {
-                                    BlyyPanel(accentColor = MaterialTheme.colorScheme.error) {
-                                        Row(
-                                            modifier = Modifier.padding(AppSpacing.Md).fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
-                                        ) {
-                                            Icon(Icons.Rounded.BrokenImage, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-                                            Text(state.message, color = MaterialTheme.colorScheme.error, style = AppTypography.BodySmall)
-                                        }
-                                    }
-                                }
-                                else -> {}
                             }
                         }
-                    }
+                        }
 
-                    // ── 聊天增强 ──
-                    BlyySectionPanel(
-                        title = "聊天增强",
-                        icon = Icons.Rounded.SmartToy,
-                        accentColor = MaterialTheme.colorScheme.tertiary
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(AppSpacing.Lg),
-                            verticalArrangement = Arrangement.spacedBy(AppSpacing.Md)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                    BlyyEntrance(index = 2) {
+        // ── 聊天增强 ──
+                            BlyySectionPanel(
+                                title = "聊天增强",
+                                icon = Icons.Rounded.SmartToy,
+                                accentColor = MaterialTheme.colorScheme.tertiary
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("发送语音", style = AppTypography.TitleSmall, fontWeight = FontWeight.Medium)
-                                    Text("智能标签匹配或随机发送舰娘语音", style = AppTypography.BodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(AppSpacing.Lg),
+                                verticalArrangement = Arrangement.spacedBy(AppSpacing.Md)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("发送语音", style = AppTypography.TitleSmall, fontWeight = FontWeight.Medium)
+                                        Text("智能标签匹配或随机发送舰娘语音", style = AppTypography.BodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Switch(
+                                        checked = currentSession.voiceEnabled,
+                                        onCheckedChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(voiceEnabled = it) } }
+                                    )
                                 }
-                                Switch(
-                                    checked = currentSession.voiceEnabled,
-                                    onCheckedChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(voiceEnabled = it) } }
-                                )
-                            }
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("发送表情包", style = AppTypography.TitleSmall, fontWeight = FontWeight.Medium)
-                                    Text("基于 AI 回复内容自动匹配表情包", style = AppTypography.BodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("发送表情包", style = AppTypography.TitleSmall, fontWeight = FontWeight.Medium)
+                                        Text("基于 AI 回复内容自动匹配表情包", style = AppTypography.BodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Switch(
+                                        checked = currentSession.stickersEnabled,
+                                        onCheckedChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(stickersEnabled = it) } }
+                                    )
                                 }
-                                Switch(
-                                    checked = currentSession.stickersEnabled,
-                                    onCheckedChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(stickersEnabled = it) } }
-                                )
-                            }
 
-                            if (currentSession.stickersEnabled) {
-                                Text("表情包发送概率: ${(currentSession.stickerChance * 100).toInt()}%", style = AppTypography.BodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Slider(
-                                    value = currentSession.stickerChance,
-                                    onValueChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(stickerChance = it) } },
-                                    valueRange = 0f..1f,
-                                    steps = 19
-                                )
-                            }
+                                if (currentSession.stickersEnabled) {
+                                    Text("表情包发送概率: ${(currentSession.stickerChance * 100).toInt()}%", style = AppTypography.BodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Slider(
+                                        value = currentSession.stickerChance,
+                                        onValueChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(stickerChance = it) } },
+                                        valueRange = 0f..1f,
+                                        steps = 19
+                                    )
+                                }
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth().clip(cardRounded)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
-                                    .clickable { showVoiceShipPicker = true }
-                                    .padding(AppSpacing.Md),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(AppSpacing.Md)
-                            ) {
-                                ShipAvatarDisplay(
-                                    avatarUrl = currentSession.voiceShipAvatar,
-                                    size = 40.dp,
-                                    placeholderIcon = Icons.Rounded.SmartToy,
-                                    placeholderIconSize = 20.dp,
-                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f),
-                                    iconTint = MaterialTheme.colorScheme.tertiary
-                                )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("语音舰娘", style = AppTypography.TitleSmall, fontWeight = FontWeight.Medium)
-                                    Text(
-                                        text = if (currentSession.voiceShipName.isNotBlank()) currentSession.voiceShipName else "点击选择舰娘",
-                                        style = AppTypography.BodySmall,
-                                        color = if (currentSession.voiceShipName.isNotBlank()) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().clip(cardRounded)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
+                                        .clickable { showVoiceShipPicker = true }
+                                        .padding(AppSpacing.Md),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.Md)
+                                ) {
+                                    ShipAvatarDisplay(
+                                        avatarUrl = currentSession.voiceShipAvatar,
+                                        size = 40.dp,
+                                        placeholderIcon = Icons.Rounded.SmartToy,
+                                        placeholderIconSize = 20.dp,
+                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f),
+                                        iconTint = MaterialTheme.colorScheme.tertiary
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("语音舰娘", style = AppTypography.TitleSmall, fontWeight = FontWeight.Medium)
+                                        Text(
+                                            text = if (currentSession.voiceShipName.isNotBlank()) currentSession.voiceShipName else "点击选择舰娘",
+                                            style = AppTypography.BodySmall,
+                                            color = if (currentSession.voiceShipName.isNotBlank()) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                if (currentSession.voiceEnabled) {
+                                    Text("随机触发概率: ${(currentSession.voiceRandomChance * 100).toInt()}%", style = AppTypography.BodySmall)
+                                    Slider(
+                                        value = currentSession.voiceRandomChance,
+                                        onValueChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(voiceRandomChance = it) } },
+                                        valueRange = 0f..1f,
+                                        steps = 19
                                     )
                                 }
                             }
-
-                            if (currentSession.voiceEnabled) {
-                                Text("随机触发概率: ${(currentSession.voiceRandomChance * 100).toInt()}%", style = AppTypography.BodySmall)
-                                Slider(
-                                    value = currentSession.voiceRandomChance,
-                                    onValueChange = { viewModel.updateCurrentSessionConfig { s -> s.copy(voiceRandomChance = it) } },
-                                    valueRange = 0f..1f,
-                                    steps = 19
-                                )
-                            }
                         }
-                    }
+                        }
 
                     Spacer(modifier = Modifier.height(AppSpacing.Xl))
                 }

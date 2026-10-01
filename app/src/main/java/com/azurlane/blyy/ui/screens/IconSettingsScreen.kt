@@ -191,7 +191,7 @@ fun IconSettingsScreen(
  * 配合安全区域裁剪（[SAFE_ZONE_RATIO]），预览显示的内容范围
  * 与启动器裁剪后的实际可见范围一致。
  */
-private val iconShape = RoundedCornerShape(22.dp)
+private val iconShape = RoundedCornerShape(AppSpacing.Corner.Xl1)
 
 /**
  * 自适应图标安全区域比例

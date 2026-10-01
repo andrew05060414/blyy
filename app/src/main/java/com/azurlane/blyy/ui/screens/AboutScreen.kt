@@ -60,6 +60,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
+import com.azurlane.blyy.ui.components.BlyyHaptic
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
 import com.azurlane.blyy.ui.components.BlyyChip
 import com.azurlane.blyy.ui.components.BlyyPanel
 import com.azurlane.blyy.ui.components.BlyyPrimaryButton
@@ -89,6 +91,7 @@ fun AboutScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val haptic = rememberBlyyHaptics()
 
     AdaptiveScreenBackground {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -167,7 +170,7 @@ private fun AppHeaderSection(currentVersion: String) {
             Box(
                 modifier = Modifier
                     .size(100.dp)
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Xxl))
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
@@ -183,7 +186,7 @@ private fun AppHeaderSection(currentVersion: String) {
                     contentDescription = "应用图标",
                     modifier = Modifier
                         .size(80.dp)
-                        .clip(RoundedCornerShape(16.dp)),
+                        .clip(RoundedCornerShape(AppSpacing.Corner.Lg)),
                     contentScale = ContentScale.Fit
                 )
             }
@@ -210,6 +213,7 @@ private fun AppHeaderSection(currentVersion: String) {
 private fun OpenSourceSection(
     context: Context
 ) {
+    val haptic = rememberBlyyHaptics()
     BlyySectionPanel(
         title = "开源代码",
         icon = Icons.Rounded.Code,
@@ -244,6 +248,7 @@ private fun OpenSourceSection(
                 BlyyPrimaryButton(
                     text = "打开仓库",
                     onClick = {
+                        haptic(BlyyHaptic.Tick)
                         val intent = Intent(Intent.ACTION_VIEW, REPO_URL.toUri())
                         context.startActivity(intent)
                     },
@@ -259,6 +264,7 @@ private fun OpenSourceSection(
 private fun DisclaimerSection(
     context: Context
 ) {
+    val haptic = rememberBlyyHaptics()
     BlyySectionPanel(
         title = "版权声明",
         icon = Icons.Rounded.Gavel,
@@ -301,7 +307,8 @@ private fun DisclaimerSection(
             BlyySecondaryButton(
                 text = "访问碧蓝航线官方网站",
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, "https://game.bilibili.com/blhx/".toUri())
+                    haptic(BlyyHaptic.Tick)
+                        val intent = Intent(Intent.ACTION_VIEW, "https://game.bilibili.com/blhx/".toUri())
                     context.startActivity(intent)
                 },
                 icon = Icons.AutoMirrored.Rounded.OpenInNew,
@@ -345,6 +352,7 @@ private fun CheckUpdateSection(
     onCheckUpdate: () -> Unit,
     context: Context
 ) {
+    val haptic = rememberBlyyHaptics()
     BlyySectionPanel(
         title = "检查更新",
         icon = Icons.Rounded.Download,
@@ -457,6 +465,7 @@ private fun CheckUpdateSection(
                                     accentColor = MaterialTheme.colorScheme.primary,
                                     onClick = {
                                         try {
+                                            haptic(BlyyHaptic.Tick)
                                             val intent = Intent(Intent.ACTION_VIEW, state.downloadUrl.toUri())
                                             context.startActivity(intent)
                                         } catch (e: Exception) {
@@ -476,6 +485,7 @@ private fun CheckUpdateSection(
                                     accentColor = AppColors.Accent.GoldDark,
                                     onClick = {
                                         try {
+                                            haptic(BlyyHaptic.Tick)
                                             val intent = Intent(Intent.ACTION_VIEW, driveLink.url.toUri())
                                             context.startActivity(intent)
                                         } catch (e: Exception) {

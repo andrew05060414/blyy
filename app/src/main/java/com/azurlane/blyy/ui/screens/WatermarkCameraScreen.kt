@@ -47,10 +47,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -64,6 +62,8 @@ import com.azurlane.blyy.ui.theme.AppSpacing
 import com.azurlane.blyy.ui.theme.AppTypography
 import com.azurlane.blyy.util.WatermarkAssets
 import com.azurlane.blyy.viewmodel.WatermarkCameraViewModel
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
+import com.azurlane.blyy.ui.components.BlyyHaptic
 import java.io.File
 
 /**
@@ -87,7 +87,7 @@ fun WatermarkCameraScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val haptic = LocalHapticFeedback.current
+    val haptic = rememberBlyyHaptics()
 
     // ---------- 系统图库选择（Photo Picker，全版本兼容、免存储权限） ----------
     val pickImage = rememberLauncherForActivityResult(
@@ -189,7 +189,7 @@ fun WatermarkCameraScreen(
 @Composable
 private fun CameraContent(
     state: WatermarkCameraViewModel.CameraUiState,
-    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback,
+    haptic: (BlyyHaptic) -> Unit,
     onBack: () -> Unit,
     onShutter: () -> Unit,
     onSelectWatermark: (String?) -> Unit,
@@ -283,7 +283,7 @@ private fun CameraContent(
             ShutterButton(
                 enabled = !state.isCapturing,
                 onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    haptic(BlyyHaptic.LongPress)
                     onShutter()
                 }
             )
@@ -296,7 +296,7 @@ private fun CameraContent(
                     .background(Color.Black.copy(alpha = 0.35f))
                     .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape)
                     .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        haptic(BlyyHaptic.Tick)
                         showWatermarkSheet = true
                     },
                 contentAlignment = Alignment.Center

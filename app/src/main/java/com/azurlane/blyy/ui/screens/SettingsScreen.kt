@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
+import com.azurlane.blyy.ui.components.BlyyEntrance
 import com.azurlane.blyy.ui.components.BlyyPanel
 import com.azurlane.blyy.ui.components.BlyySectionPanel
 import com.azurlane.blyy.ui.components.BlyySettingsRow
@@ -92,122 +93,134 @@ fun SettingsScreen(
             ) {
                 Spacer(modifier = Modifier.height(AppSpacing.Sm))
 
-                // ── 界面风格 ──
-                BlyySectionPanel(
-                    title = "界面风格",
-                    icon = Icons.Rounded.Sailing,
-                    accentColor = MaterialTheme.colorScheme.primary
-                ) {
-                    BlyySettingsRow(
+                BlyyEntrance(index = 0) {
+        // ── 界面风格 ──
+                    BlyySectionPanel(
+                        title = "界面风格",
                         icon = Icons.Rounded.Sailing,
-                        title = "指挥中心 UI",
-                        description = if (uiStyle.isCommandCenter()) {
-                            "当前：碧蓝航线科技风 HUD 界面"
-                        } else {
-                            "开启后切换为新版指挥中心风格"
-                        },
-                        checked = uiStyle.isCommandCenter(),
-                        onCheckedChange = { enabled ->
-                            viewModel.setUiStyle(
-                                if (enabled) UiStyle.COMMAND_CENTER else UiStyle.CLASSIC
-                            )
-                        }
-                    )
+                        accentColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        BlyySettingsRow(
+                            icon = Icons.Rounded.Sailing,
+                            title = "指挥中心 UI",
+                            description = if (uiStyle.isCommandCenter()) {
+                                "当前：碧蓝航线科技风 HUD 界面"
+                            } else {
+                                "开启后切换为新版指挥中心风格"
+                            },
+                            checked = uiStyle.isCommandCenter(),
+                            onCheckedChange = { enabled ->
+                                viewModel.setUiStyle(
+                                    if (enabled) UiStyle.COMMAND_CENTER else UiStyle.CLASSIC
+                                )
+                            }
+                        )
+                    }
                 }
 
-                // ── 显示 ──
-                BlyySectionPanel(
-                    title = "显示",
-                    icon = Icons.Rounded.AutoMode,
-                    accentColor = MaterialTheme.colorScheme.secondary
-                ) {
-                    BlyySettingsRow(
+                BlyyEntrance(index = 1) {
+        // ── 显示 ──
+                    BlyySectionPanel(
+                        title = "显示",
                         icon = Icons.Rounded.AutoMode,
-                        title = "始终深色模式",
-                        description = if (forceDark) "已强制深色，忽略系统设置" else "跟随系统浅色/深色设置",
-                        checked = forceDark,
-                        onCheckedChange = viewModel::setForceDarkTheme
-                    )
-                    BlyySettingsRow(
-                        icon = Icons.Rounded.Palette,
-                        title = "Material You 动态取色",
-                        description = if (dynamicColor) {
-                            "跟随壁纸取色，品牌主色保持不变"
-                        } else {
-                            "使用固定品牌配色"
-                        },
-                        checked = dynamicColor,
-                        onCheckedChange = viewModel::setDynamicColorEnabled
-                    )
-                    BlyySettingsRow(
-                        icon = Icons.Rounded.Fullscreen,
-                        title = "沉浸式状态栏",
-                        description = if (hideStatusBar) {
-                            "已隐藏状态栏，从屏幕顶部下滑可临时呼出"
-                        } else {
-                            "显示系统状态栏"
-                        },
-                        checked = hideStatusBar,
-                        onCheckedChange = viewModel::setHideStatusBar
-                    )
+                        accentColor = MaterialTheme.colorScheme.secondary
+                    ) {
+                        BlyySettingsRow(
+                            icon = Icons.Rounded.AutoMode,
+                            title = "始终深色模式",
+                            description = if (forceDark) "已强制深色，忽略系统设置" else "跟随系统浅色/深色设置",
+                            checked = forceDark,
+                            onCheckedChange = viewModel::setForceDarkTheme
+                        )
+                        BlyySettingsRow(
+                            icon = Icons.Rounded.Palette,
+                            title = "Material You 动态取色",
+                            description = if (dynamicColor) {
+                                "跟随壁纸取色，品牌主色保持不变"
+                            } else {
+                                "使用固定品牌配色"
+                            },
+                            checked = dynamicColor,
+                            onCheckedChange = viewModel::setDynamicColorEnabled
+                        )
+                        BlyySettingsRow(
+                            icon = Icons.Rounded.Fullscreen,
+                            title = "沉浸式状态栏",
+                            description = if (hideStatusBar) {
+                                "已隐藏状态栏，从屏幕顶部下滑可临时呼出"
+                            } else {
+                                "显示系统状态栏"
+                            },
+                            checked = hideStatusBar,
+                            onCheckedChange = viewModel::setHideStatusBar
+                        )
+                    }
                 }
 
-                // ── 更新 ──
-                BlyySectionPanel(
-                    title = "更新",
-                    icon = Icons.Rounded.CloudSync,
-                    accentColor = MaterialTheme.colorScheme.tertiary
-                ) {
-                    BlyySettingsRow(
+                BlyyEntrance(index = 2) {
+        // ── 更新 ──
+                    BlyySectionPanel(
+                        title = "更新",
                         icon = Icons.Rounded.CloudSync,
-                        title = "自动检测更新",
-                        description = if (autoCheckUpdate) "启动时自动检查新版本" else "不会自动检查更新，可在关于页手动检查",
-                        checked = autoCheckUpdate,
-                        onCheckedChange = viewModel::setAutoCheckUpdateEnabled
-                    )
+                        accentColor = MaterialTheme.colorScheme.tertiary
+                    ) {
+                        BlyySettingsRow(
+                            icon = Icons.Rounded.CloudSync,
+                            title = "自动检测更新",
+                            description = if (autoCheckUpdate) "启动时自动检查新版本" else "不会自动检查更新，可在关于页手动检查",
+                            checked = autoCheckUpdate,
+                            onCheckedChange = viewModel::setAutoCheckUpdateEnabled
+                        )
+                    }
                 }
 
-                // ── 碧蓝航线助手 — 跳转入口 ──
-                BlyySectionPanel(
-                    title = "碧蓝航线助手",
-                    icon = Icons.Rounded.PersonSearch,
-                    accentColor = MaterialTheme.colorScheme.primary
-                ) {
-                    SettingsNavigationRow(
-                        icon = Icons.Rounded.PersonSearch,
-                        title = "助手配置",
-                        description = "配置 UID、服务器等查询参数",
-                        onClick = onNavigateToAssistantConfig
-                    )
-                }
+                BlyyEntrance(index = 3) {
+        // ── 碧蓝航线助手 — 跳转入口 ──
+                        BlyySectionPanel(
+                            title = "碧蓝航线助手",
+                            icon = Icons.Rounded.PersonSearch,
+                            accentColor = MaterialTheme.colorScheme.primary
+                        ) {
+                        SettingsNavigationRow(
+                            icon = Icons.Rounded.PersonSearch,
+                            title = "助手配置",
+                            description = "配置 UID、服务器等查询参数",
+                            onClick = onNavigateToAssistantConfig
+                        )
+                    }
+                    }
 
-                // ── 啾信功能 — 跳转入口 ──
-                BlyySectionPanel(
-                    title = "啾信",
-                    icon = Icons.Rounded.SmartToy,
-                    accentColor = MaterialTheme.colorScheme.secondary
-                ) {
-                    SettingsNavigationRow(
-                        icon = Icons.Rounded.SmartToy,
-                        title = "啾信配置",
-                        description = "配置 API 密钥、人格提示词、聊天选项",
-                        onClick = onNavigateToJiuxinConfig
-                    )
-                }
+                BlyyEntrance(index = 4) {
+        // ── 啾信功能 — 跳转入口 ──
+                        BlyySectionPanel(
+                            title = "啾信",
+                            icon = Icons.Rounded.SmartToy,
+                            accentColor = MaterialTheme.colorScheme.secondary
+                        ) {
+                        SettingsNavigationRow(
+                            icon = Icons.Rounded.SmartToy,
+                            title = "啾信配置",
+                            description = "配置 API 密钥、人格提示词、聊天选项",
+                            onClick = onNavigateToJiuxinConfig
+                        )
+                    }
+                    }
 
-                // ── 应用快捷方式 — 跳转入口 ──
-                BlyySectionPanel(
-                    title = "应用快捷方式",
-                    icon = Icons.Rounded.AppShortcut,
-                    accentColor = MaterialTheme.colorScheme.tertiary
-                ) {
-                    SettingsNavigationRow(
-                        icon = Icons.Rounded.AppShortcut,
-                        title = "自定义 app 快捷方式",
-                        description = "从相册选择图片创建桌面快捷方式",
-                        onClick = onNavigateToAppIconSettings
-                    )
-                }
+                BlyyEntrance(index = 5) {
+        // ── 应用快捷方式 — 跳转入口 ──
+                        BlyySectionPanel(
+                            title = "应用快捷方式",
+                            icon = Icons.Rounded.AppShortcut,
+                            accentColor = MaterialTheme.colorScheme.tertiary
+                        ) {
+                        SettingsNavigationRow(
+                            icon = Icons.Rounded.AppShortcut,
+                            title = "自定义 app 快捷方式",
+                            description = "从相册选择图片创建桌面快捷方式",
+                            onClick = onNavigateToAppIconSettings
+                        )
+                    }
+                    }
 
                 Spacer(modifier = Modifier.height(AppSpacing.Xl))
             }

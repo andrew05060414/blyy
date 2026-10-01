@@ -82,7 +82,10 @@ import com.azurlane.blyy.data.model.ChatSession
 import com.azurlane.blyy.data.model.ApiConfig
 import com.azurlane.blyy.data.model.PersonaConfig
 import com.azurlane.blyy.ui.components.BlyyBottomSheet
+import com.azurlane.blyy.ui.components.BlyyHaptic
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
 import com.azurlane.blyy.ui.theme.AppAnimation
+import com.azurlane.blyy.ui.theme.AppSpacing
 import com.azurlane.blyy.ui.theme.AppTypography
 import com.azurlane.blyy.ui.theme.JuusPalette
 import com.azurlane.blyy.ui.theme.LocalIsDark
@@ -117,12 +120,15 @@ fun ConversationListScreen(
     val conversations by viewModel.uniqueConversations.collectAsStateWithLifecycle()
     val currentSessionId by viewModel.currentSessionId.collectAsStateWithLifecycle()
     val presets by viewModel.presets.collectAsStateWithLifecycle()
+    // presetId → preset 索引：避免每个列表项内 firstOrNull 线性查找（会话多时 O(n²)）
+    val presetsById = remember(presets) { presets.associateBy { it.id } }
     val apiConfigs by viewModel.apiConfigs.collectAsStateWithLifecycle()
     val personaConfigs by viewModel.personaConfigs.collectAsStateWithLifecycle()
     val apiUrl by viewModel.apiUrl.collectAsStateWithLifecycle()
     val apiKey by viewModel.apiKey.collectAsStateWithLifecycle()
     val isDark = LocalIsDark.current
     val context = LocalContext.current
+    val haptic = rememberBlyyHaptics()
 
     var showPlusDropdown by remember { mutableStateOf(false) }
     var showNewChatSheet by remember { mutableStateOf(false) }
@@ -236,7 +242,7 @@ fun ConversationListScreen(
                             val session = orderedList[index]
                             val isDragging = draggingIndex == index
                             val isSelected = session.id == currentSessionId
-                            val associatedPreset = presets.firstOrNull { it.id == session.presetId }
+                            val associatedPreset = session.presetId.takeIf { it.isNotBlank() }?.let { presetsById[it] }
                             val effectiveAvatar = session.avatarUrl.ifBlank { associatedPreset?.avatarUrl ?: "" }
                             val effectiveName = session.jiuxinName.ifBlank { associatedPreset?.name ?: session.name }
                             val hasPreset = session.presetId.isNotBlank()
@@ -284,6 +290,7 @@ fun ConversationListScreen(
                                         Modifier.pointerInput(orderedList.size) {
                                             detectDragGesturesAfterLongPress(
                                                 onDragStart = {
+                                                    haptic(BlyyHaptic.LongPress)
                                                     draggingIndex = index
                                                     dragOffsetY = 0f
                                                 },
@@ -322,10 +329,12 @@ fun ConversationListScreen(
                                         Modifier.pointerInput(session.id) {
                                             detectTapGestures(
                                                 onTap = {
+                                                    haptic(BlyyHaptic.Tick)
                                                     viewModel.switchToSession(session.id)
                                                     onNavigateToChat()
                                                 },
                                                 onLongPress = {
+                                                    haptic(BlyyHaptic.LongPress)
                                                     isEditMode = true
                                                 }
                                             )
@@ -407,6 +416,7 @@ fun ConversationListScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
+                    haptic(BlyyHaptic.Heavy)
                     viewModel.deleteSessionsByShip(session.id)
                     showDeleteSessionConfirm = null
                     Toast.makeText(context, "已删除该舰娘的所有对话", Toast.LENGTH_SHORT).show()
@@ -478,9 +488,9 @@ private fun JuusLeftNavRail(
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Xs2))
                     .background(Color.White.copy(alpha = 0.85f))
-                    .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(AppSpacing.Corner.Xs2))
                     .clickable(onClick = onBack),
                 contentAlignment = Alignment.Center
             ) {
@@ -495,7 +505,7 @@ private fun JuusLeftNavRail(
             // 白色分隔线
             Box(
                 modifier = Modifier
-                    .padding(vertical = 12.dp)
+                    .padding(vertical = AppSpacing.Md)
                     .width(30.dp)
                     .height(1.5.dp)
                     .background(Color.White.copy(alpha = 0.5f))
@@ -548,11 +558,11 @@ private fun JuusListHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(22.dp))
+            .padding(horizontal = AppSpacing.Md, vertical = 6.dp)
+            .clip(RoundedCornerShape(AppSpacing.Corner.Xl1))
             .background(glassHeaderColor)
-            .border(1.dp, glassBorderColor, RoundedCornerShape(22.dp))
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .border(1.dp, glassBorderColor, RoundedCornerShape(AppSpacing.Corner.Xl1))
+            .padding(horizontal = AppSpacing.Lg, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -584,10 +594,10 @@ private fun JuusListHeader(
             // 编辑模式：完成按钮 — 无border，仅背景色
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Lg))
                     .background(primaryColor.copy(alpha = 0.2f))
                     .clickable(onClick = onExitEditMode)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Sm),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -622,7 +632,7 @@ private fun JuusListHeader(
                         expanded = showPlusDropdown,
                         onDismissRequest = onDismissDropdown,
                         modifier = Modifier
-                            .background(dropdownSurface, RoundedCornerShape(12.dp))
+                            .background(dropdownSurface, RoundedCornerShape(AppSpacing.Corner.Md))
                             .width(160.dp)
                     ) {
                         DropdownMenuItem(
@@ -732,13 +742,13 @@ private fun JuusConversationItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(AppSpacing.Corner.Lg))
             .background(cardBg)
-            .border(borderWidth, borderColor, RoundedCornerShape(16.dp))
+            .border(borderWidth, borderColor, RoundedCornerShape(AppSpacing.Corner.Lg))
             .then(gestureModifier)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Md),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -750,7 +760,7 @@ private fun JuusConversationItem(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(AppSpacing.Corner.Md))
                             .background(JuusPalette.ListPage.ChannelEmojiBg),
                         contentAlignment = Alignment.Center
                     ) {
@@ -776,7 +786,7 @@ private fun JuusConversationItem(
                                                     modifier = Modifier
                                                         .weight(1f)
                                                         .fillMaxHeight()
-                                                        .clip(RoundedCornerShape(6.dp)),
+                                                        .clip(RoundedCornerShape(AppSpacing.Corner.Sm1)),
                                                     fallbackContent = {
                                                         Icon(
                                                             Icons.Rounded.Person,
@@ -858,7 +868,7 @@ private fun JuusConversationItem(
                     color = previewColor.copy(alpha = 0.7f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = AppSpacing.Xs)
                 )
             }
 
@@ -926,7 +936,7 @@ private fun JuusNewChatSheet(
         Column(modifier = Modifier.fillMaxWidth().background(cardBg)) {
             // ── 标题栏 ──
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Md),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -958,7 +968,7 @@ private fun JuusNewChatSheet(
                 text = "选择 API 配置和舰娘人格后开始对话，未选择则使用当前全局配置",
                 style = AppTypography.CaptionMedium,
                 color = hintColor.copy(alpha = 0.8f),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                modifier = Modifier.padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Xxs)
             )
 
             // ── 内容区（可滚动） ──
@@ -1053,7 +1063,7 @@ private fun JuusNewChatSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(sectionBg)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Sm),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -1074,8 +1084,8 @@ private fun JuusNewChatSheet(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Xs)
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Xs2))
                     .background(primaryColor)
                     .clickable {
                         onStart(selectedApiConfigId, selectedPersonaConfigId)
@@ -1110,7 +1120,7 @@ private fun JuusNewChatSectionHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(sectionBg)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -1158,7 +1168,7 @@ private fun JuusApiConfigRow(
             .fillMaxWidth()
             .background(if (isSelected) selectedBg else Color.Transparent)
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = AppSpacing.Lg, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -1213,7 +1223,7 @@ private fun JuusApiConfigRow(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = AppSpacing.Lg)
             .height(1.dp)
             .background(itemDividerColor)
     )
@@ -1238,7 +1248,7 @@ private fun JuusPersonaConfigRow(
             .fillMaxWidth()
             .background(if (isSelected) selectedBg else Color.Transparent)
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = AppSpacing.Lg, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -1298,7 +1308,7 @@ private fun JuusPersonaConfigRow(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = AppSpacing.Lg)
             .height(1.dp)
             .background(itemDividerColor)
     )
@@ -1318,7 +1328,7 @@ private fun JuusEmptyState(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = if (compact) 10.dp else 16.dp),
+            .padding(horizontal = AppSpacing.Lg, vertical = if (compact) 10.dp else AppSpacing.Lg),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1375,7 +1385,7 @@ private fun JuusNewGroupSheet(
         Column(modifier = Modifier.fillMaxWidth().background(cardBg)) {
             // ── 标题栏 ──
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Md),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1407,18 +1417,18 @@ private fun JuusNewGroupSheet(
                 text = "设置群聊名称并选择至少 2 位舰娘成员",
                 style = AppTypography.CaptionMedium,
                 color = hintColor.copy(alpha = 0.8f),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                modifier = Modifier.padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Xxs)
             )
 
             // ── 群聊名称输入 ──
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Sm)
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Md))
                     .background(fieldBg)
-                    .border(1.dp, fieldBorder, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 14.dp, vertical = 4.dp)
+                    .border(1.dp, fieldBorder, RoundedCornerShape(AppSpacing.Corner.Md))
+                    .padding(horizontal = 14.dp, vertical = AppSpacing.Xs)
             ) {
                 androidx.compose.foundation.text.BasicTextField(
                     value = groupName,
@@ -1499,7 +1509,7 @@ private fun JuusNewGroupSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(sectionBg)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Sm),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -1521,8 +1531,8 @@ private fun JuusNewGroupSheet(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Xs)
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Xs2))
                     .background(if (canCreate) primaryColor else primaryColor.copy(alpha = 0.35f))
                     .clickable(enabled = canCreate) {
                         onCreate(groupName.trim(), selectedMemberIds.toList())

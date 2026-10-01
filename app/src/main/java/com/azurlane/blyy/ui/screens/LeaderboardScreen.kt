@@ -29,6 +29,9 @@ import com.azurlane.blyy.data.model.LeaderboardCategory
 import com.azurlane.blyy.data.model.LeaderboardEntry
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyAnimatedEmptyState
+import com.azurlane.blyy.ui.components.BlyySkeletonList
+import com.azurlane.blyy.ui.components.BlyyHaptic
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
 import com.azurlane.blyy.ui.components.BlyyErrorState
 import com.azurlane.blyy.ui.components.BlyyTabRow
 import com.azurlane.blyy.ui.components.BlyyTopBar
@@ -50,6 +53,7 @@ fun LeaderboardScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val userUid by viewModel.userUid.collectAsStateWithLifecycle()
     val userServer by viewModel.userServer.collectAsStateWithLifecycle()
+    val haptic = rememberBlyyHaptics()
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
@@ -63,7 +67,10 @@ fun LeaderboardScreen(
                     subtitle = "全服排行",
                     onBackClick = onBack,
                     actions = {
-                        IconButton(onClick = { viewModel.refresh(force = true) }) {
+                        IconButton(onClick = {
+                            haptic(BlyyHaptic.Tick)
+                            viewModel.refresh(force = true)
+                        }) {
                             Icon(
                                 Icons.Rounded.Refresh,
                                 contentDescription = "刷新",
@@ -142,7 +149,7 @@ fun LeaderboardScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            BlyySkeletonList(itemCount = 8)
                         }
                     }
                     state.error != null -> {
@@ -344,7 +351,7 @@ private fun LeaderboardRankCard(
                         text = "分",
                         style = AppTypography.LabelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 2.dp)
+                        modifier = Modifier.padding(bottom = AppSpacing.Xxs)
                     )
                 }
             }

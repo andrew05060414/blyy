@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -48,12 +47,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -66,12 +63,16 @@ import androidx.compose.ui.unit.dp
 import com.azurlane.blyy.data.model.Ship
 import com.azurlane.blyy.data.model.StudentFilterData
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
+import com.azurlane.blyy.ui.components.BlyyBottomSheet
+import com.azurlane.blyy.ui.components.BlyyEmptyState
 import com.azurlane.blyy.ui.components.BlyyTopBar
 import com.azurlane.blyy.ui.components.ShipCard
 import com.azurlane.blyy.ui.components.ShipCardShimmer
 import com.azurlane.blyy.ui.theme.*
 import com.azurlane.blyy.viewmodel.GalleryIntent
 import com.azurlane.blyy.viewmodel.GalleryViewState
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
+import com.azurlane.blyy.ui.components.BlyyHaptic
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -91,7 +92,7 @@ fun GalleryScreen(
     onScrollStateChange: (isScrolling: Boolean) -> Unit = { _ -> }
 ) {
     val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
+    val haptic = rememberBlyyHaptics()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     var showFilterSheet by remember { mutableStateOf(false) }
@@ -210,7 +211,7 @@ fun GalleryScreen(
          (searchInput.isNotEmpty() && suggestions.isNotEmpty()))
 
     fun openWiki(ship: Ship) {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        haptic(BlyyHaptic.LongPress)
         val url = if (ship.archiveType == com.azurlane.blyy.viewmodel.ArchiveType.STUDENT.name) {
             // 学生档案（蔚蓝档案）：link 已存储 gamekee 学生详情页完整 URL
             ship.link.ifBlank { "https://www.gamekee.com/ba/" }
@@ -272,9 +273,12 @@ fun GalleryScreen(
             }
             // 3. 无数据 + 无错误 → 空状态
             !state.isLoading && state.error == null && filteredShips.isEmpty() -> {
-                GalleryEmptyState(
-                    message = if (state.searchQuery.isNotBlank()) "未找到匹配的结果" else "暂无数据，点击刷新",
-                    onRetry = { onIntent(GalleryIntent.ForceRefresh) },
+                BlyyEmptyState(
+                    icon = Icons.Outlined.SearchOff,
+                    title = if (state.searchQuery.isNotBlank()) "未找到匹配的结果" else "暂无数据",
+                    description = if (state.searchQuery.isNotBlank()) "换个关键词或调整筛选条件试试" else "下拉或点击按钮刷新数据",
+                    actionLabel = "刷新",
+                    onAction = { onIntent(GalleryIntent.ForceRefresh) },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(top = fixedTopPadding)
@@ -301,22 +305,22 @@ fun GalleryScreen(
                                 ship = ship,
                                 decorativeAnimation = allowDecorAnimation,
                                 onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    haptic(BlyyHaptic.Tick)
                                     onShipClick(ship)
                                 },
                                 onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    haptic(BlyyHaptic.LongPress)
                                     onIntent(GalleryIntent.ToggleFavorite(ship))
                                     Toast.makeText(context, if (ship.isFavorite) "已解除与${ship.name}的誓约" else "已与${ship.name}誓约", Toast.LENGTH_SHORT).show()
                                 },
                                 onWikiClick = { openWiki(ship) },
                                 onOathClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    haptic(BlyyHaptic.LongPress)
                                     onIntent(GalleryIntent.ToggleFavorite(ship))
                                     Toast.makeText(context, if (ship.isFavorite) "已解除与${ship.name}的誓约" else "已与${ship.name}誓约", Toast.LENGTH_SHORT).show()
                                 },
                                 onGalleryClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    haptic(BlyyHaptic.Tick)
                                     onShowGallery(ship)
                                 },
                                 modifier = with(sharedTransitionScope) {
@@ -385,7 +389,7 @@ fun GalleryScreen(
                     focusManager.clearFocus()
                 },
                 onClearHistory = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    haptic(BlyyHaptic.Tick)
                     searchHistory.clear()
                 },
                 onRemoveHistoryItem = { query ->
@@ -406,14 +410,14 @@ fun GalleryScreen(
                     focusManager.clearFocus()
                 },
                 onFilterClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    haptic(BlyyHaptic.Tick)
                     showFilterSheet = true
                 },
                 hasActiveFilters = activeFilterCount > 0,
                 activeFilterCount = activeFilterCount,
                 archiveType = state.archiveType,
                 onSwitchArchive = { newType ->
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    haptic(BlyyHaptic.Tick)
                     onIntent(GalleryIntent.SwitchArchive(newType))
                 },
                 isRefreshing = state.isRefreshing,
@@ -1367,27 +1371,13 @@ private fun ModernFilterBottomSheet(
 ) {
     val isDark = LocalIsDark.current
     val glassSurface = if (isDark) AppColors.GlassSurfaceDark else AppColors.GlassSurfaceLight
-    val haptic = LocalHapticFeedback.current
+    val haptic = rememberBlyyHaptics()
 
     var tempFaction by remember { mutableStateOf(selectedFaction) }
     var tempType by remember { mutableStateOf(selectedType) }
     var tempRarity by remember { mutableStateOf(selectedRarity) }
 
-    val sheetShape = if (LocalUiStyle.current.isCommandCenter()) {
-        CutCornerShape(topStart = 16.dp, topEnd = 16.dp)
-    } else {
-        RoundedCornerShape(topStart = AppSpacing.Corner.Xxl, topEnd = AppSpacing.Corner.Xxl)
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = glassSurface.copy(alpha = 0.98f),
-        shape = sheetShape,
-        dragHandle = {
-            ModernDragHandle()
-        }
-    ) {
+    BlyyBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1439,7 +1429,7 @@ private fun ModernFilterBottomSheet(
                         options = allFactions,
                         selected = tempFaction,
                         onSelected = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic(BlyyHaptic.Tick)
                             tempFaction = it
                         }
                     )
@@ -1451,7 +1441,7 @@ private fun ModernFilterBottomSheet(
                         options = allTypes,
                         selected = tempType,
                         onSelected = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic(BlyyHaptic.Tick)
                             tempType = it
                         }
                     )
@@ -1463,7 +1453,7 @@ private fun ModernFilterBottomSheet(
                         options = allRarities,
                         selected = tempRarity,
                         onSelected = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic(BlyyHaptic.Tick)
                             tempRarity = it
                         }
                     )
@@ -1484,7 +1474,7 @@ private fun ModernFilterBottomSheet(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic(BlyyHaptic.Tick)
                             tempFaction = "全部"
                             tempType = "全部"
                             tempRarity = "全部"
@@ -1497,7 +1487,7 @@ private fun ModernFilterBottomSheet(
 
                     Button(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic(BlyyHaptic.Tick)
                             onFactionSelected(tempFaction)
                             onTypeSelected(tempType)
                             onRaritySelected(tempRarity)
@@ -1512,20 +1502,6 @@ private fun ModernFilterBottomSheet(
             }
         }
     }
-}
-
-@Composable
-private fun ModernDragHandle() {
-    Box(
-        modifier = Modifier
-            .padding(top = AppSpacing.Md, bottom = AppSpacing.Sm)
-            .width(40.dp)
-            .height(4.dp)
-            .background(
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(2.dp)
-            )
-    )
 }
 
 @Composable
@@ -1591,23 +1567,11 @@ private fun StudentFilterBottomSheet(
 ) {
     val isDark = LocalIsDark.current
     val glassSurface = if (isDark) AppColors.GlassSurfaceDark else AppColors.GlassSurfaceLight
-    val haptic = LocalHapticFeedback.current
-
-    val sheetShape = if (LocalUiStyle.current.isCommandCenter()) {
-        CutCornerShape(topStart = 16.dp, topEnd = 16.dp)
-    } else {
-        RoundedCornerShape(topStart = AppSpacing.Corner.Xxl, topEnd = AppSpacing.Corner.Xxl)
-    }
+    val haptic = rememberBlyyHaptics()
 
     val activeFilterCount = studentFilters.count { it.value != "全部" }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = glassSurface.copy(alpha = 0.98f),
-        shape = sheetShape,
-        dragHandle = { ModernDragHandle() }
-    ) {
+    BlyyBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1671,7 +1635,7 @@ private fun StudentFilterBottomSheet(
                         options = listOf("全部") + category.options,
                         selected = selected,
                         onSelected = { option ->
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic(BlyyHaptic.Tick)
                             onFilterSelected(category.key, option)
                         }
                     )
@@ -1693,7 +1657,7 @@ private fun StudentFilterBottomSheet(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic(BlyyHaptic.Tick)
                             onReset()
                         },
                         modifier = Modifier.weight(1f),
@@ -1705,7 +1669,7 @@ private fun StudentFilterBottomSheet(
 
                     Button(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic(BlyyHaptic.Tick)
                             onDismiss()
                         },
                         modifier = Modifier.weight(1f),
@@ -1860,45 +1824,6 @@ private fun GalleryErrorState(
 /**
  * 空状态 — 无数据且无错误时显示
  */
-@Composable
-private fun GalleryEmptyState(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.padding(horizontal = AppSpacing.Screen.Horizontal * 2),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.SearchOff,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            modifier = Modifier.size(64.dp)
-        )
-        Spacer(modifier = Modifier.height(AppSpacing.Lg))
-        Text(
-            text = message,
-            style = AppTypography.BodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(AppSpacing.Lg))
-        OutlinedButton(
-            onClick = onRetry,
-            shape = RoundedCornerShape(AppSpacing.Corner.Lg)
-        ) {
-            Icon(
-                Icons.Filled.Refresh,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(AppSpacing.Xs))
-            Text("刷新")
-        }
-    }
-}
-
 /**
  * 非侵入式错误横幅 — 有缓存数据但刷新失败时显示在网格顶部
  */

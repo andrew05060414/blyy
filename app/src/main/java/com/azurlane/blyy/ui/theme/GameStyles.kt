@@ -196,7 +196,7 @@ fun GameHintBanner(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Md),
         color = containerColor.copy(alpha = 0.3f)
     ) {
         Row(
@@ -230,7 +230,7 @@ fun GameResultCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Lg),
         color = containerColor.copy(alpha = 0.5f),
         shadowElevation = 4.dp
     ) {
@@ -274,7 +274,7 @@ fun GameResultCard(
 fun GameWrongCard() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Md),
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
     ) {
         Text(
@@ -315,7 +315,7 @@ fun GameStatItem(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Md),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Column(

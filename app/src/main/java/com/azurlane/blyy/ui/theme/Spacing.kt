@@ -94,12 +94,16 @@ object AppSpacing {
         val None = 0.dp
         val Xxs = 2.dp
         val Xs = 4.dp
+        /** 6dp — 小徽标/细小容器圆角 */
+        val Sm1 = 6.dp
         /** 14dp — GuessImage/GuessVoice 卡片常用圆角 */
         val Xs2 = 14.dp
         val Sm = 8.dp
         val Md = 12.dp
         val Lg = 16.dp
         val Xl = 20.dp
+        /** 22dp — 啾信列表卡片圆角 */
+        val Xl1 = 22.dp
         val Xxl = 24.dp
         val Full = 9999.dp
         val Chamfer = 10.dp

@@ -93,10 +93,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -168,6 +166,8 @@ import com.azurlane.blyy.viewmodel.StudentGalleryViewModel
 import com.azurlane.blyy.viewmodel.UpdateCheckViewModel
 import com.azurlane.blyy.viewmodel.VoiceIntent
 import com.azurlane.blyy.viewmodel.VoiceViewModel
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
+import com.azurlane.blyy.ui.components.BlyyHaptic
 import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
@@ -203,7 +203,7 @@ fun AppContent() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
+    val haptic = rememberBlyyHaptics()
     val scope = rememberCoroutineScope()
 
     val showBottomBar = currentDestination?.route?.startsWith("voice/") != true &&
@@ -330,7 +330,7 @@ fun AppContent() {
                 ModernDrawerSheet(
                     currentRoute = currentDestination?.route,
                     onNavigate = { route ->
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        haptic(BlyyHaptic.Tick)
                         // Live2D 改为直接跳转浏览器查看，避免应用内 WebView 的 WAF 拦截等问题
                         if (route == "live2d") {
                             scope.launch { drawerState.close() }
@@ -351,7 +351,7 @@ fun AppContent() {
                         }
                     },
                     onClose = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        haptic(BlyyHaptic.Tick)
                         scope.launch { drawerState.close() }
                     }
                 )
@@ -442,7 +442,7 @@ fun AppContent() {
                             onIntent = viewModel::onIntent,
                             onShipClick = { ship -> navController.navigate("voice/${ship.name}?avatarUrl=${Uri.encode(ship.avatarUrl)}") },
                             onNavigateToGallery = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                haptic(BlyyHaptic.Tick)
                                 navController.navigate(Screen.Gallery.route) {
                                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
@@ -451,7 +451,7 @@ fun AppContent() {
                             },
                             onShowGallery = { ship -> navController.navigate("gallery/${ship.name}?avatarUrl=${Uri.encode(ship.avatarUrl)}") },
                             onOpenMenu = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                haptic(BlyyHaptic.Tick)
                                 scope.launch { drawerState.open() }
                             },
                             sharedTransitionScope = this@SharedTransitionLayout,
@@ -879,7 +879,7 @@ fun AppContent() {
                         currentDestination = currentDestination,
                         galleryLabel = galleryLabel,
                         onNavigate = { route ->
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic(BlyyHaptic.Tick)
                             navController.navigate(route) {
                                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
@@ -923,7 +923,7 @@ private fun ModernNavigationBar(
                         )
                     )
                 )
-                .padding(top = if (isWatch) 4.dp else AppSpacing.Sm, bottom = if (isWatch) 4.dp else AppSpacing.Sm)
+                .padding(top = if (isWatch) AppSpacing.Xs else AppSpacing.Sm, bottom = if (isWatch) AppSpacing.Xs else AppSpacing.Sm)
         ) {
             Row(
                 modifier = Modifier
@@ -995,7 +995,7 @@ private fun RowScope.ModernNavigationItem(
     val isWatch = isWatchScreen()
     val isCommandCenter = LocalUiStyle.current.isCommandCenter()
     val accentColor = MaterialTheme.colorScheme.primary
-    val haptic = LocalHapticFeedback.current
+    val haptic = rememberBlyyHaptics()
 
     // 选中态缩放 — 统一 AppAnimation token（Snappy 弹性）
     val iconScale by animateFloatAsState(
@@ -1028,7 +1028,7 @@ private fun RowScope.ModernNavigationItem(
     Surface(
         onClick = {
             // 轻量触觉反馈 — 商业级导航手感
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            haptic(BlyyHaptic.LongPress)
             onClick()
         },
         modifier = Modifier
@@ -1522,7 +1522,7 @@ private fun ModernDrawerItem(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = if (isLastInGroup) AppSpacing.Xs else 0.dp),
+            .padding(bottom = if (isLastInGroup) AppSpacing.Xs else AppSpacing.None),
         shape = if (isCommandCenter) BlyyShapes.PanelSmall else RoundedCornerShape(AppSpacing.Corner.Lg),
         color = if (isSelected) selectedBg else Color.Transparent,
         shadowElevation = 0.dp,
@@ -1728,7 +1728,7 @@ private fun UpdateAvailableDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                                .padding(horizontal = AppSpacing.Lg, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -1763,7 +1763,7 @@ private fun UpdateAvailableDialog(
                                         ),
                                         shape = RoundedCornerShape(AppSpacing.Corner.Xxs)
                                     )
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .padding(horizontal = 6.dp, vertical = AppSpacing.Xxs)
                             ) {
                                 Text(
                                     text = "NEW",
@@ -1890,7 +1890,7 @@ private fun UpdateChannelOption(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = AppSpacing.Md, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {

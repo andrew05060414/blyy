@@ -39,7 +39,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.SdStorage
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +66,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.azurlane.blyy.ui.components.BlyySkeletonGrid
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyPanel
 import com.azurlane.blyy.ui.components.BlyyTopBar
@@ -412,7 +412,7 @@ private fun SdResourceCard(
                         else MaterialTheme.colorScheme.tertiary).copy(alpha = 0.85f)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = AppSpacing.Xs, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = AppSpacing.Xs, vertical = AppSpacing.Xxs),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -446,7 +446,7 @@ private fun SdResourceCard(
                             contentDescription = "已选择",
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier
-                                .padding(2.dp)
+                                .padding(AppSpacing.Xxs)
                                 .size(14.dp)
                         )
                     }
@@ -466,7 +466,7 @@ private fun SdResourceCard(
                             style = AppTypography.CardLabel,
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = AppSpacing.Xs, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = AppSpacing.Xs, vertical = AppSpacing.Xxs)
                         )
                     }
                 }
@@ -650,23 +650,21 @@ private fun SdInfoRow(label: String, value: String) {
 
 @Composable
 private fun SdLoadingState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(40.dp),
-                strokeWidth = 3.dp,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(AppSpacing.Md))
-            Text(
-                "扫描资源中…",
-                style = AppTypography.BodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+    // 与真实网格同构的骨架（110dp 自适应列），底部保留扫描提示
+    Box(modifier = Modifier.fillMaxSize()) {
+        BlyySkeletonGrid(
+            minSize = 110.dp,
+            modifier = Modifier.fillMaxSize(),
+            itemCount = 12
+        )
+        Text(
+            "扫描资源中…",
+            style = AppTypography.BodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(AppSpacing.Xl)
+        )
     }
 }
 

@@ -2,6 +2,7 @@ package com.azurlane.blyy.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
@@ -43,6 +44,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -501,17 +503,18 @@ fun BlyyPrimaryButton(
     }
     val isWatch = isWatchScreen()
 
-    // 流光扫过动画 — 按压时触发一次
-    val shimmerTransition = rememberInfiniteTransition(label = "btnShimmer")
-    val shimmerX by shimmerTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2800, easing = LinearEasing, delayMillis = 1200),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerX"
-    )
+    // 流光扫过动画 — 按压时触发一次（Animatable 惰性驱动，静止时不占用渲染帧）
+    val shimmerXAnim = remember { Animatable(-1f) }
+    LaunchedEffect(isPressed) {
+        if (isPressed && enabled) {
+            shimmerXAnim.snapTo(-1f)
+            shimmerXAnim.animateTo(
+                targetValue = 2f,
+                animationSpec = tween(durationMillis = 700, easing = LinearEasing)
+            )
+        }
+    }
+    val shimmerX = shimmerXAnim.value
 
     Box(
         modifier = modifier
@@ -577,7 +580,7 @@ fun BlyyPrimaryButton(
                 enabled = enabled,
                 onClick = onClick
             )
-            .padding(horizontal = if (isWatch) AppSpacing.Padding.ButtonHorizontal - 4.dp else AppSpacing.Padding.ButtonHorizontal, vertical = AppSpacing.Padding.ButtonVertical),
+            .padding(horizontal = if (isWatch) AppSpacing.Padding.ButtonHorizontal - AppSpacing.Xs else AppSpacing.Padding.ButtonHorizontal, vertical = AppSpacing.Padding.ButtonVertical),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -644,7 +647,7 @@ fun BlyySecondaryButton(
                 enabled = enabled,
                 onClick = onClick
             )
-            .padding(horizontal = if (isWatch) AppSpacing.Padding.ButtonHorizontal - 4.dp else AppSpacing.Padding.ButtonHorizontal, vertical = AppSpacing.Padding.ButtonVertical),
+            .padding(horizontal = if (isWatch) AppSpacing.Padding.ButtonHorizontal - AppSpacing.Xs else AppSpacing.Padding.ButtonHorizontal, vertical = AppSpacing.Padding.ButtonVertical),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -742,7 +745,7 @@ fun BlyyChip(
                 indication = ripple(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                 onClick = onClick
             )
-            .padding(horizontal = if (isWatch) AppSpacing.Padding.ChipHorizontal - 2.dp else AppSpacing.Padding.ChipHorizontal, vertical = AppSpacing.Padding.ChipVertical),
+            .padding(horizontal = if (isWatch) AppSpacing.Padding.ChipHorizontal - AppSpacing.Xxs else AppSpacing.Padding.ChipHorizontal, vertical = AppSpacing.Padding.ChipVertical),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -1166,10 +1169,11 @@ fun BlyySpeechBubble(
     text: String,
     variant: SpeechBubbleVariant = SpeechBubbleVariant.WithTail,
     modifier: Modifier = Modifier,
-    isDark: Boolean = LocalIsDark.current
+    isDark: Boolean = LocalIsDark.current,
+    maxLines: Int = Int.MAX_VALUE
 ) {
     when (variant) {
-        SpeechBubbleVariant.WithTail -> WithTailBubble(text = text, isDark = isDark, modifier = modifier)
+        SpeechBubbleVariant.WithTail -> WithTailBubble(text = text, isDark = isDark, modifier = modifier, maxLines = maxLines)
         SpeechBubbleVariant.Compact -> CompactBubble(text = text, isDark = isDark, modifier = modifier)
     }
 }
@@ -1177,7 +1181,7 @@ fun BlyySpeechBubble(
 enum class SpeechBubbleVariant { WithTail, Compact }
 
 @Composable
-private fun WithTailBubble(text: String, isDark: Boolean, modifier: Modifier = Modifier) {
+private fun WithTailBubble(text: String, isDark: Boolean, modifier: Modifier = Modifier, maxLines: Int = Int.MAX_VALUE) {
     val bubbleColor = if (isDark) ChatColors.SpeechBubbleDark else ChatColors.SpeechBubbleLight
     val textColor = if (isDark) Color.White else Color.Black
     val hPadding = if (text.length > 40) AppSpacing.Lg else AppSpacing.Md
@@ -1200,7 +1204,8 @@ private fun WithTailBubble(text: String, isDark: Boolean, modifier: Modifier = M
                     lineHeight = if (text.length > 80) 15.sp else 18.sp
                 ),
                 color = textColor,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = maxLines
             )
         }
         Canvas(modifier = Modifier.size(12.dp, 6.dp)) {

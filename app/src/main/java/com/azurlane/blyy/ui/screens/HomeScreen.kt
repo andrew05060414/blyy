@@ -867,7 +867,7 @@ fun PremiumInteractiveButton(
                     shape = RoundedCornerShape(AppSpacing.Corner.Xl)
                 )
                 .padding(
-                    horizontal = AppSpacing.Padding.ButtonHorizontal + 12.dp,
+                    horizontal = AppSpacing.Padding.ButtonHorizontal + AppSpacing.Md,
                     vertical = AppSpacing.Padding.ButtonVertical + 6.dp
                 ),
             verticalAlignment = Alignment.CenterVertically,

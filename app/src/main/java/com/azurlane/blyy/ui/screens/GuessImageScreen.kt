@@ -91,6 +91,8 @@ import androidx.media3.common.util.UnstableApi
 import coil.compose.AsyncImage
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyConfirmDialog
+import com.azurlane.blyy.ui.components.BlyyHaptic
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
 import com.azurlane.blyy.ui.components.BlyyTextField
 import com.azurlane.blyy.ui.components.BlyyTopBar
 import com.azurlane.blyy.ui.theme.AppColors
@@ -128,6 +130,16 @@ fun GuessByImageScreen(
 
     // 退出二次确认对话框状态：仅在结算弹窗中点击"退出"时触发
     var showExitConfirm by remember { mutableStateOf(false) }
+    val haptic = rememberBlyyHaptics()
+
+    // 作答结果触觉反馈：答对确认、答错重震、跳过轻点
+    LaunchedEffect(state.lastResult) {
+        when (state.lastResult) {
+            GuessResult.CORRECT -> haptic(BlyyHaptic.Confirm)
+            GuessResult.WRONG -> haptic(BlyyHaptic.Heavy)
+            else -> Unit
+        }
+    }
 
     if (state.showSettlement) {
         ModernSettlementDialog(
@@ -165,8 +177,12 @@ fun GuessByImageScreen(
         },
         onHistory = onHistory,
         onInputChange = viewModel::onInputChanged,
-        onSubmit = { viewModel.checkAnswer() },
+        onSubmit = {
+            haptic(BlyyHaptic.Confirm)
+            viewModel.checkAnswer()
+        },
         onNext = {
+            haptic(BlyyHaptic.Tick)
             // 统一调用 ViewModel 的 goToNextQuestion，由 VM 内部读取最新状态计数
             viewModel.goToNextQuestion()
         },
@@ -332,13 +348,13 @@ private fun DifficultySelector(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Lg),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(4.dp),
+                .padding(AppSpacing.Xs),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilterChip(
@@ -394,11 +410,11 @@ private fun DifficultySelector(
 @Composable
 private fun ScoreChip(totalScore: Int) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Xl),
         color = MaterialTheme.colorScheme.primaryContainer
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = AppSpacing.Md, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -422,11 +438,11 @@ private fun ScoreChip(totalScore: Int) {
 private fun HintBanner(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Md),
         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(AppSpacing.Md),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -440,11 +456,11 @@ private fun HintBanner(text: String, icon: androidx.compose.ui.graphics.vector.I
 private fun ScoreBanner(score: Int) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Md),
         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Sm),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -491,11 +507,11 @@ private fun ImageCard(
             .scale(scale)
             .shadow(
                 elevation = 16.dp,
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(AppSpacing.Corner.Xxl),
                 ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                 spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
             )
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(AppSpacing.Corner.Xxl))
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
@@ -512,7 +528,7 @@ private fun ImageCard(
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
                     )
                 ),
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(AppSpacing.Corner.Xxl)
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -586,12 +602,12 @@ private fun CroppedImage(
 private fun CorrectAnswerCard(score: Int, onReplayVoice: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Xl),
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
         shadowElevation = 6.dp
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(AppSpacing.Xl),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -637,7 +653,7 @@ private fun CorrectAnswerCard(score: Int, onReplayVoice: () -> Unit) {
             }
             OutlinedButton(
                 onClick = onReplayVoice,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(AppSpacing.Corner.Xs2),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.primary
                 )
@@ -657,11 +673,11 @@ private fun AnswerCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Xl),
         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(AppSpacing.Lg),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -706,11 +722,11 @@ private fun AnswerCard(
 private fun WrongAnswerCard() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Lg),
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(AppSpacing.Lg),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -892,11 +908,11 @@ private fun ModernSettlementDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(AppSpacing.Corner.Xl),
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier.padding(AppSpacing.Xxl),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
@@ -933,11 +949,11 @@ private fun ModernSettlementDialog(
                 if (score.totalQuestions > 0) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(AppSpacing.Corner.Md),
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(AppSpacing.Md),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("平均得分", style = AppTypography.LabelMedium)
@@ -954,7 +970,7 @@ private fun ModernSettlementDialog(
         confirmButton = {
             Button(
                 onClick = onContinue,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(AppSpacing.Corner.Xs2),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
@@ -965,7 +981,7 @@ private fun ModernSettlementDialog(
         dismissButton = {
             OutlinedButton(
                 onClick = onExit,
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(AppSpacing.Corner.Xs2)
             ) {
                 Text("退出", style = AppTypography.LabelLarge)
             }
@@ -977,12 +993,12 @@ private fun ModernSettlementDialog(
 private fun StatItemContent(label: String, value: String, subValue: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(AppSpacing.Corner.Xs2),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Column(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(AppSpacing.Md)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

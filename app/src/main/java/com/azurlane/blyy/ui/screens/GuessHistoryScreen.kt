@@ -44,6 +44,7 @@ import com.azurlane.blyy.data.model.GuessHistory
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyConfirmDialog
 import com.azurlane.blyy.ui.components.BlyyEmptyState
+import com.azurlane.blyy.ui.components.BlyySkeletonList
 import com.azurlane.blyy.ui.components.BlyyTopBar
 import com.azurlane.blyy.ui.theme.AppColors
 import com.azurlane.blyy.ui.theme.AppSpacing
@@ -101,11 +102,8 @@ fun GuessHistoryScreen(
 
                 // 内容区
                 if (state.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        BlyySkeletonList(itemCount = 8)
                     }
                 } else if (state.isEmpty) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

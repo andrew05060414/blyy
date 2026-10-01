@@ -32,10 +32,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -59,7 +57,7 @@ fun ShipCard(
     /** 列表滚动等场景关闭无限动画，保障 60fps */
     decorativeAnimation: Boolean = true
 ) {
-    val hapticFeedback = LocalHapticFeedback.current
+    val hapticFeedback = rememberBlyyHaptics()
     
     val rarityColor = remember(ship.rarity) { AppColors.Rarity.getRarityColor(ship.rarity) }
     val rarityGradient = remember(ship.rarity) { AppColors.Rarity.getRarityGradient(ship.rarity) }
@@ -120,11 +118,11 @@ fun ShipCard(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    hapticFeedback(BlyyHaptic.Tick)
                     onClick()
                 },
                 onLongClick = {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    hapticFeedback(BlyyHaptic.LongPress)
                     if (onWikiClick != null || onOathClick != null || onGalleryClick != null) {
                         showMenu = true
                     } else {
@@ -188,7 +186,7 @@ fun ShipCard(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(
-                        bottom = 12.dp,
+                        bottom = AppSpacing.Md,
                         start = AppSpacing.Sm,
                         end = AppSpacing.Sm
                     ),
@@ -248,7 +246,7 @@ fun ShipCard(
                             color = Color.White,
                             style = AppTypography.CardLabel,
                             modifier = Modifier.padding(
-                                horizontal = 8.dp,
+                                horizontal = AppSpacing.Sm,
                                 vertical = 3.dp
                             )
                         )
@@ -263,7 +261,7 @@ fun ShipCard(
                             color = Color.White,
                             style = AppTypography.CardLabel,
                             modifier = Modifier.padding(
-                                horizontal = 8.dp,
+                                horizontal = AppSpacing.Sm,
                                 vertical = 3.dp
                             )
                         )

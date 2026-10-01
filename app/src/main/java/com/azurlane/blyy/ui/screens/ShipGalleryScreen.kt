@@ -25,10 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -40,6 +38,8 @@ import com.azurlane.blyy.ui.components.ZoomableImage
 import com.azurlane.blyy.ui.theme.*
 import com.azurlane.blyy.viewmodel.ShipGalleryState
 import com.azurlane.blyy.viewmodel.ShipGalleryViewModel
+import com.azurlane.blyy.ui.components.BlyyHaptic
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -61,7 +61,7 @@ fun ShipGalleryScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDark = LocalIsDark.current
-    val hapticFeedback = LocalHapticFeedback.current
+    val hapticFeedback = rememberBlyyHaptics()
     
     val illustrations = state.gallery?.illustrations ?: emptyList()
     val figures = state.gallery?.figures ?: emptyList()
@@ -81,7 +81,7 @@ fun ShipGalleryScreen(
     fun switchFigure() {
         displayFigure?.let { (skinName, figureUrl) ->
             viewModel.selectFigure(shipName, skinName, figureUrl)
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            hapticFeedback(BlyyHaptic.Tick)
             showSwitchSuccess = true
             scope.launch {
                 kotlinx.coroutines.delay(1500)
@@ -223,7 +223,7 @@ fun ShipGalleryScreen(
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 32.dp)
+                        .padding(bottom = AppSpacing.Xxxl)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -282,7 +282,7 @@ private fun FigureDisplayPanel(
     isCurrentSelected: Boolean = false,
     onSwitchClick: () -> Unit = {}
 ) {
-    val hapticFeedback = LocalHapticFeedback.current
+    val hapticFeedback = rememberBlyyHaptics()
     var showBubble by remember { mutableStateOf(true) }
     
     val successScale = remember { Animatable(1f) }
@@ -312,7 +312,7 @@ private fun FigureDisplayPanel(
             SpeechBubble(
                 text = "正在查看：${displayFigure.first}",
                 isDark = isDark,
-                modifier = Modifier.padding(bottom = 4.dp)
+                modifier = Modifier.padding(bottom = AppSpacing.Xs)
             )
         }
 
@@ -330,7 +330,7 @@ private fun FigureDisplayPanel(
                     .padding(AppSpacing.Xs)
                     .clip(RoundedCornerShape(AppSpacing.Corner.Md))
                     .clickable {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        hapticFeedback(BlyyHaptic.Tick)
                         showBubble = !showBubble
                     }
             ) {
@@ -339,7 +339,7 @@ private fun FigureDisplayPanel(
                     contentDescription = displayFigure.first,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(2.dp)
+                        .padding(AppSpacing.Xxs)
                 )
                 
                 if (isCurrentSelected) {
@@ -473,7 +473,7 @@ private fun BoxScope.TopBar(
         tonalElevation = AppSpacing.Elevation.Sm,
         modifier = Modifier
             .align(Alignment.TopStart)
-            .padding(top = 48.dp, start = AppSpacing.Lg)
+            .padding(top = AppSpacing.Huge, start = AppSpacing.Lg)
             .size(44.dp)
     ) {
         Box(
@@ -495,7 +495,7 @@ private fun BoxScope.TopBar(
         tonalElevation = AppSpacing.Elevation.Sm,
         modifier = Modifier
             .align(Alignment.TopEnd)
-            .padding(top = 48.dp, end = AppSpacing.Lg)
+            .padding(top = AppSpacing.Huge, end = AppSpacing.Lg)
             .size(44.dp)
     ) {
         Box(

@@ -42,12 +42,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -167,7 +165,7 @@ fun SecretaryChibiOverlay(
 
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
-    val hapticFeedback = LocalHapticFeedback.current
+    val hapticFeedback = rememberBlyyHaptics()
     val context = LocalContext.current
 
     // 尝试解析 SD 小人动画资源；解析到则用 Spine 渲染，否则回退静态立绘。
@@ -271,13 +269,13 @@ fun SecretaryChibiOverlay(
                     scaleMultiplier = 1.0f,
                     onTap = {
                         isTapped = true
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        hapticFeedback(BlyyHaptic.Tick)
                         onTap()
                     },
                     onDragStart = {
                         isDragging = true
                         onDragStateChanged?.invoke(true)
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        hapticFeedback(BlyyHaptic.LongPress)
                     },
                     onDrag = { dx, dy -> onPositionChange?.invoke(dx, dy) },
                     onDragEnd = {
@@ -303,7 +301,7 @@ fun SecretaryChibiOverlay(
                             detectTapGestures(
                                 onTap = {
                                     isTapped = true
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    hapticFeedback(BlyyHaptic.Tick)
                                     onTap()
                                 }
                             )
@@ -313,7 +311,7 @@ fun SecretaryChibiOverlay(
                                 onDragStart = {
                                     isDragging = true
                                     onDragStateChanged?.invoke(true)
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    hapticFeedback(BlyyHaptic.LongPress)
                                 },
                                 onDragEnd = {
                                     isDragging = false
@@ -486,12 +484,12 @@ fun SecretaryChibiOverlay(
                     touchEnabled = true,
                     onTap = {
                         isTapped = true
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        hapticFeedback(BlyyHaptic.Tick)
                         onTap()
                     },
                     onDragStart = {
                         isDragging = true
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        hapticFeedback(BlyyHaptic.LongPress)
                     },
                     onDrag = { dx, dy ->
                         localOffsetX = (localOffsetX + dx).coerceIn(0f, (screenWidth - baseWidthPx).coerceAtLeast(0f))
@@ -520,7 +518,7 @@ fun SecretaryChibiOverlay(
                             detectTapGestures(
                                 onTap = {
                                     isTapped = true
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    hapticFeedback(BlyyHaptic.Tick)
                                     onTap()
                                 }
                             )
@@ -529,7 +527,7 @@ fun SecretaryChibiOverlay(
                             detectDragGestures(
                                 onDragStart = {
                                     isDragging = true
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    hapticFeedback(BlyyHaptic.LongPress)
                                 },
                                 onDragEnd = { isDragging = false },
                                 onDragCancel = { isDragging = false }
@@ -597,7 +595,7 @@ fun SecretaryChibiOverlay(
                         IntOffset(0, bubbleTopY.roundToInt())
                     }
             ) {
-                SecretarySpeechBubble(text = dialogue ?: "", isDark = isDark)
+                BlyySpeechBubble(text = dialogue ?: "", isDark = isDark, maxLines = 2, modifier = Modifier.widthIn(max = 280.dp))
             }
 
             // 拖动提示标签：对齐到基础容器底部，不随放大变化
@@ -660,48 +658,8 @@ fun SecretaryOverlayAuxiliaryContent(
                 )
             }
         } else {
-            SecretarySpeechBubble(text = dialogue ?: "", isDark = isDark)
+            BlyySpeechBubble(text = dialogue ?: "", isDark = isDark, maxLines = 2, modifier = Modifier.widthIn(max = 280.dp))
         }
     }
 }
 
-@Composable
-internal fun SecretarySpeechBubble(text: String, isDark: Boolean) {
-    val bubbleColor = if (isDark) ChatColors.SpeechBubbleDark else ChatColors.SpeechBubbleLight
-    val textColor = if (isDark) Color.White else Color.Black
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = bubbleColor,
-            tonalElevation = 4.dp,
-            shadowElevation = 8.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-        ) {
-            Text(
-                text = text,
-                modifier = Modifier
-                    .widthIn(max = 280.dp)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                style = AppTypography.BodySmall.copy(
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
-                    fontWeight = FontWeight.Medium
-                ),
-                color = textColor,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Canvas(modifier = Modifier.size(12.dp, 6.dp)) {
-            val path = Path().apply {
-                moveTo(0f, 0f)
-                lineTo(size.width, 0f)
-                lineTo(size.width / 2, size.height)
-                close()
-            }
-            drawPath(path, color = bubbleColor)
-        }
-    }
-}

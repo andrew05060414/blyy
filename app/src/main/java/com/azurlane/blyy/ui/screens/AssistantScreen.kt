@@ -58,6 +58,7 @@ import com.azurlane.blyy.ui.components.BlyyErrorState
 import com.azurlane.blyy.ui.components.BlyyLoadingState
 import com.azurlane.blyy.ui.components.BlyyPanel
 import com.azurlane.blyy.ui.components.BlyyPrimaryButton
+import com.azurlane.blyy.ui.components.BlyyEntrance
 import com.azurlane.blyy.ui.components.BlyySectionPanel
 import com.azurlane.blyy.ui.components.BlyyTopBar
 import com.azurlane.blyy.ui.theme.AppColors
@@ -307,73 +308,79 @@ private fun UserDetailResult(detail: UserDetailData) {
         modifier = Modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(AppSpacing.Gap.Md)
     ) {
+        BlyyEntrance(index = 0) {
         // ── 指挥官信息 ──
-        BlyySectionPanel(
-            title = "指挥官信息",
-            icon = Icons.Rounded.Person,
-            accentColor = MaterialTheme.colorScheme.primary
-        ) {
-            Column(
-                modifier = Modifier.padding(AppSpacing.Md),
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
-            ) {
-                ResultRow(label = "指挥官", value = "${u.nickname} (Lv.${u.level})")
-                ResultRow(label = "服务器", value = "${u.server} (UID:${u.uid})")
-                ResultRow(label = "收集率", value = "${s.collection_rate} | 进度: ${s.mainline_progress}")
-                ResultRow(label = "舰队", value = u.guild_name ?: "无")
-            }
-        }
-
-        // ── 资源信息 ──
-        BlyySectionPanel(
-            title = "资源信息",
-            icon = Icons.Rounded.Inventory2,
-            accentColor = AppColors.Accent.Gold
-        ) {
-            Column(
-                modifier = Modifier.padding(AppSpacing.Md),
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
-            ) {
-                IconBadgeRow(icon = Icons.Rounded.Inventory2, label = "物资", value = "${s.coins_current}", badgeColor = AppColors.Accent.Gold)
-                IconBadgeRow(icon = Icons.Rounded.Person, label = "石油", value = "${s.oil_current}", badgeColor = AppColors.Accent.Cyan)
-                ResultRow(label = "存粮", value = "${s.food_current}")
-                ResultRow(label = "演习", value = "${c.exercise.today_remaining}/10")
-            }
-        }
-
-        // ── 进度信息 ──
-        BlyySectionPanel(
-            title = "进度信息",
-            icon = Icons.Rounded.TrendingUp,
-            accentColor = MaterialTheme.colorScheme.tertiary
-        ) {
-            Column(
-                modifier = Modifier.padding(AppSpacing.Md),
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
-            ) {
-                ResultRow(
-                    label = "委托",
-                    value = "进行${p.commissions.in_progress} | 完成${p.commissions.completed} | 空闲${p.commissions.idle}"
-                )
-                ResultRow(
-                    label = "科研",
-                    value = "进行${p.research.in_progress} | 完成${p.research.completed} | 空闲${p.research.idle}"
-                )
-
-                // 待办副本
-                val todo = c.daily_challenges.filter { it.daily_challenge_remaining_attempts > 0 }
-                if (todo.isNotEmpty()) {
-                    GradientDivider()
-                    ResultRow(
-                        label = "待办副本",
-                        value = todo.joinToString(", ") { it.daily_challenge_name }
-                    )
-                } else {
-                    GradientDivider()
-                    ResultRow(label = "今日副本", value = "已全部完成")
+                BlyySectionPanel(
+                    title = "指挥官信息",
+                    icon = Icons.Rounded.Person,
+                    accentColor = MaterialTheme.colorScheme.primary
+                ) {
+                Column(
+                    modifier = Modifier.padding(AppSpacing.Md),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
+                ) {
+                    ResultRow(label = "指挥官", value = "${u.nickname} (Lv.${u.level})")
+                    ResultRow(label = "服务器", value = "${u.server} (UID:${u.uid})")
+                    ResultRow(label = "收集率", value = "${s.collection_rate} | 进度: ${s.mainline_progress}")
+                    ResultRow(label = "舰队", value = u.guild_name ?: "无")
                 }
             }
-        }
+            }
+
+        BlyyEntrance(index = 1) {
+        // ── 资源信息 ──
+                BlyySectionPanel(
+                    title = "资源信息",
+                    icon = Icons.Rounded.Inventory2,
+                    accentColor = AppColors.Accent.Gold
+                ) {
+                Column(
+                    modifier = Modifier.padding(AppSpacing.Md),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
+                ) {
+                    IconBadgeRow(icon = Icons.Rounded.Inventory2, label = "物资", value = "${s.coins_current}", badgeColor = AppColors.Accent.Gold)
+                    IconBadgeRow(icon = Icons.Rounded.Person, label = "石油", value = "${s.oil_current}", badgeColor = AppColors.Accent.Cyan)
+                    ResultRow(label = "存粮", value = "${s.food_current}")
+                    ResultRow(label = "演习", value = "${c.exercise.today_remaining}/10")
+                }
+            }
+            }
+
+        BlyyEntrance(index = 2) {
+        // ── 进度信息 ──
+                BlyySectionPanel(
+                    title = "进度信息",
+                    icon = Icons.Rounded.TrendingUp,
+                    accentColor = MaterialTheme.colorScheme.tertiary
+                ) {
+                Column(
+                    modifier = Modifier.padding(AppSpacing.Md),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
+                ) {
+                    ResultRow(
+                        label = "委托",
+                        value = "进行${p.commissions.in_progress} | 完成${p.commissions.completed} | 空闲${p.commissions.idle}"
+                    )
+                    ResultRow(
+                        label = "科研",
+                        value = "进行${p.research.in_progress} | 完成${p.research.completed} | 空闲${p.research.idle}"
+                    )
+
+                    // 待办副本
+                    val todo = c.daily_challenges.filter { it.daily_challenge_remaining_attempts > 0 }
+                    if (todo.isNotEmpty()) {
+                        GradientDivider()
+                        ResultRow(
+                            label = "待办副本",
+                            value = todo.joinToString(", ") { it.daily_challenge_name }
+                        )
+                    } else {
+                        GradientDivider()
+                        ResultRow(label = "今日副本", value = "已全部完成")
+                    }
+                }
+            }
+            }
     }
 }
 

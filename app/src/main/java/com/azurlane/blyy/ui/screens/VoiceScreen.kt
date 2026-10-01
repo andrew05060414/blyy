@@ -43,14 +43,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -84,6 +82,8 @@ import com.azurlane.blyy.viewmodel.PlayMode
 import com.azurlane.blyy.viewmodel.VoiceIntent
 import com.azurlane.blyy.viewmodel.VoiceViewModel
 import com.azurlane.blyy.viewmodel.VoiceViewState
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
+import com.azurlane.blyy.ui.components.BlyyHaptic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -394,7 +394,7 @@ private fun VoiceLanguageSwitch(
     currentLanguage: VoiceLanguage,
     onLanguageChange: (VoiceLanguage) -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
+    val haptic = rememberBlyyHaptics()
     val isDark = LocalIsDark.current
 
     val cnScale by animateFloatAsState(
@@ -458,7 +458,7 @@ private fun VoiceLanguageSwitch(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    haptic(BlyyHaptic.LongPress)
                     onClick()
                 },
             contentAlignment = Alignment.Center
@@ -720,7 +720,7 @@ private fun VoiceItemRow(
     onFavoriteClick: () -> Unit,
     onShareClick: () -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
+    val haptic = rememberBlyyHaptics()
     var showMenu by remember { mutableStateOf(false) }
     
     val containerColor = if (isCurrent)
@@ -788,7 +788,7 @@ private fun VoiceItemRow(
                     .combinedClickable(
                         onClick = onClick,
                         onLongClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            haptic(BlyyHaptic.LongPress)
                             showMenu = true
                         }
                     ),
@@ -804,7 +804,7 @@ private fun VoiceItemRow(
                     .combinedClickable(
                         onClick = onClick,
                         onLongClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            haptic(BlyyHaptic.LongPress)
                             showMenu = true
                         }
                     ),
@@ -912,7 +912,9 @@ private fun GlassPlayerControlBar(
     val glassSurface = if (isDark) AppColors.GlassSurfaceDark else AppColors.GlassSurfaceLight
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
-    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+    val screenWidthPx = remember(configuration, density) {
+        with(density) { configuration.screenWidthDp.dp.toPx() }
+    }
     
     var isCollapsed by remember { mutableStateOf(false) }
     var collapseToRight by remember { mutableStateOf(true) }
@@ -1281,7 +1283,7 @@ private fun PlayLaterBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp)
+                .padding(bottom = AppSpacing.Xxxl)
         ) {
             // 标题栏
             Row(
@@ -1314,7 +1316,7 @@ private fun PlayLaterBottomSheet(
                                 text = "${items.size}",
                                 style = AppTypography.LabelMediumBold,
                                 color = accentColor,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                modifier = Modifier.padding(horizontal = AppSpacing.Sm, vertical = AppSpacing.Xxs)
                             )
                         }
                     }
@@ -1853,7 +1855,7 @@ private fun DraggableFigure(
 ) {
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
-    val hapticFeedback = LocalHapticFeedback.current
+    val hapticFeedback = rememberBlyyHaptics()
     val isDark = LocalIsDark.current
     
     val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
@@ -1922,7 +1924,7 @@ private fun DraggableFigure(
                     detectTapGestures(
                         onTap = {
                             isTapped = true
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            hapticFeedback(BlyyHaptic.Tick)
                             onRandomPlay()
                         }
                     )
@@ -1931,7 +1933,7 @@ private fun DraggableFigure(
                     detectDragGestures(
                         onDragStart = { 
                             isDragging = true
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            hapticFeedback(BlyyHaptic.LongPress)
                         },
                         onDragEnd = { isDragging = false },
                         onDragCancel = { isDragging = false }

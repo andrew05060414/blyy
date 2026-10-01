@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -138,6 +139,9 @@ import com.azurlane.blyy.data.model.getGroupPosition
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyBottomSheet
 import com.azurlane.blyy.ui.components.BlyyConfirmDialog
+import com.azurlane.blyy.ui.components.BlyyHaptic
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
+import com.azurlane.blyy.ui.components.BlyyDragHandle
 import com.azurlane.blyy.ui.components.BlyyPanel
 import com.azurlane.blyy.ui.components.BlyySectionPanel
 import com.azurlane.blyy.ui.components.StableOutlinedTextField
@@ -347,6 +351,7 @@ fun JiuxinChatScreen(
     // 聊天背景图片 URL（空表示使用默认纯色背景）
     val chatBackgroundUrl by viewModel.chatBackgroundUrl.collectAsStateWithLifecycle()
     val isDark = LocalIsDark.current
+    val haptic = rememberBlyyHaptics()
 
     var showHistoryPanel by remember { mutableStateOf(false) }
     var showMemberPanel by remember { mutableStateOf(false) }
@@ -550,6 +555,7 @@ fun JiuxinChatScreen(
                             onStickerClick = EmptyCallback,
                             onMessageLongClick = remember(message.id, message.type) {
                                 {
+                                    haptic(BlyyHaptic.LongPress)
                                     val isUser = message.type == ChatMessageType.USER.name
                                     messageActionTarget = Pair(message.id, isUser)
                                 }
@@ -590,7 +596,7 @@ fun JiuxinChatScreen(
                                 .padding(horizontal = AppSpacing.Md, vertical = 6.dp)
                                 .clip(RoundedCornerShape(AppSpacing.Corner.Sm))
                                 .background(errorBg)
-                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                                .padding(horizontal = AppSpacing.Lg, vertical = 10.dp)
                         ) {
                             Text(
                                 text = chatState.error!!,
@@ -936,10 +942,10 @@ private fun EmptyChatState(
             )
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Xl))
                     .background(primaryColor)
                     .clickable { onBack() }
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                    .padding(horizontal = AppSpacing.Xxl, vertical = AppSpacing.Sm),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -995,7 +1001,7 @@ private fun JuusChatTopBar(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 4.dp)
+                .padding(start = AppSpacing.Xs)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
@@ -1059,7 +1065,7 @@ private fun TypingIndicator(
     val avatarBorder = if (isDark) JuusColors.Dark.AvatarBorder else JuusColors.AvatarBorder
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.Md, vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Xs),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.Top
     ) {
@@ -1078,15 +1084,15 @@ private fun TypingIndicator(
             Text(
                 text = jiuxinName,
                 style = AppTypography.LabelSmallMedium.copy(color = nameColor),
-                modifier = Modifier.padding(start = 2.dp, bottom = 3.dp)
+                modifier = Modifier.padding(start = AppSpacing.Xxs, bottom = 3.dp)
             )
-            // 打字气泡 — JUUSTAGRAM 圆角 12 12 12 4
+            // 打字气泡 — 与 AI 消息气泡共用同一分组形状（独立消息）
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 4.dp, bottomEnd = 12.dp))
+                    .clip(incomingBubbleShape(GroupPosition.SINGLE))
                     .background(bubbleBg)
-                    .border(1.dp, bubbleBorder, RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 4.dp, bottomEnd = 12.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .border(1.dp, bubbleBorder, incomingBubbleShape(GroupPosition.SINGLE))
+                    .padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Sm)
             ) {
                 TypingDots(dotColor = dotColor)
             }
@@ -1177,7 +1183,7 @@ private fun HistoryPanel(
                                 .clip(RoundedCornerShape(AppSpacing.Corner.Sm))
                                 .background(if (isCurrent) (if (isDark) JuusColors.Dark.AiName else JuusColors.Primary).copy(alpha = 0.08f) else Color.Transparent)
                                 .clickable { onSwitchSession(session.id) }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Md),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
@@ -1260,10 +1266,10 @@ private fun GroupMemberPanel(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 4.dp)
+                                .padding(top = AppSpacing.Xs)
                                 .clip(RoundedCornerShape(AppSpacing.Corner.Sm))
                                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.4f else 0.5f))
-                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                                .padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Xs),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             androidx.compose.foundation.text.BasicTextField(
@@ -1290,7 +1296,7 @@ private fun GroupMemberPanel(
                         text = "群成员（${selectedPersonaIds.size} 位，至少 2 位）",
                         style = AppTypography.LabelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(horizontal = AppSpacing.Lg, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = AppSpacing.Lg, vertical = AppSpacing.Xs)
                     )
                 }
 
@@ -1311,7 +1317,7 @@ private fun GroupMemberPanel(
                                     onUpdateMembers(newSet.toList())
                                 }
                             }
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                            .padding(horizontal = AppSpacing.Lg, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -1363,17 +1369,17 @@ private fun GroupMemberPanel(
 // ── JUUSTAGRAM 消息分组圆角计算 ──
 // CSS 圆角顺序 (top-left, top-right, bottom-right, bottom-left) = Compose (topStart, topEnd, bottomEnd, bottomStart)
 private fun incomingBubbleShape(groupPos: GroupPosition): RoundedCornerShape = when (groupPos) {
-    GroupPosition.SINGLE -> RoundedCornerShape(12.dp, 12.dp, 12.dp, 4.dp) // 12 12 12 4
-    GroupPosition.FIRST -> RoundedCornerShape(12.dp, 12.dp, 4.dp, 4.dp)   // 12 12 4 4
-    GroupPosition.MIDDLE -> RoundedCornerShape(4.dp, 12.dp, 4.dp, 4.dp)   // 4 12 4 4
-    GroupPosition.LAST -> RoundedCornerShape(4.dp, 12.dp, 12.dp, 4.dp)    // 4 12 12 4
+    GroupPosition.SINGLE -> RoundedCornerShape(AppSpacing.Corner.Md, AppSpacing.Corner.Md, AppSpacing.Corner.Md, AppSpacing.Corner.Xs) // 12 12 12 4
+    GroupPosition.FIRST -> RoundedCornerShape(AppSpacing.Corner.Md, AppSpacing.Corner.Md, AppSpacing.Corner.Xs, AppSpacing.Corner.Xs)   // 12 12 4 4
+    GroupPosition.MIDDLE -> RoundedCornerShape(AppSpacing.Corner.Xs, AppSpacing.Corner.Md, AppSpacing.Corner.Xs, AppSpacing.Corner.Xs)   // 4 12 4 4
+    GroupPosition.LAST -> RoundedCornerShape(AppSpacing.Corner.Xs, AppSpacing.Corner.Md, AppSpacing.Corner.Md, AppSpacing.Corner.Xs)    // 4 12 12 4
 }
 
 private fun outgoingBubbleShape(groupPos: GroupPosition): RoundedCornerShape = when (groupPos) {
-    GroupPosition.SINGLE -> RoundedCornerShape(12.dp, 12.dp, 4.dp, 12.dp) // 12 12 4 12
-    GroupPosition.FIRST -> RoundedCornerShape(12.dp, 12.dp, 4.dp, 4.dp)   // 12 12 4 4
-    GroupPosition.MIDDLE -> RoundedCornerShape(4.dp, 4.dp, 4.dp, 12.dp)   // 4 4 4 12
-    GroupPosition.LAST -> RoundedCornerShape(4.dp, 12.dp, 4.dp, 12.dp)    // 4 12 4 12
+    GroupPosition.SINGLE -> RoundedCornerShape(AppSpacing.Corner.Md, AppSpacing.Corner.Md, AppSpacing.Corner.Xs, AppSpacing.Corner.Md) // 12 12 4 12
+    GroupPosition.FIRST -> RoundedCornerShape(AppSpacing.Corner.Md, AppSpacing.Corner.Md, AppSpacing.Corner.Xs, AppSpacing.Corner.Xs)   // 12 12 4 4
+    GroupPosition.MIDDLE -> RoundedCornerShape(AppSpacing.Corner.Xs, AppSpacing.Corner.Xs, AppSpacing.Corner.Xs, AppSpacing.Corner.Md)   // 4 4 4 12
+    GroupPosition.LAST -> RoundedCornerShape(AppSpacing.Corner.Xs, AppSpacing.Corner.Md, AppSpacing.Corner.Xs, AppSpacing.Corner.Md)    // 4 12 4 12
 }
 
 @Composable
@@ -1418,7 +1424,7 @@ private fun MessageBubble(
                                 onClick = {},
                                 onLongClick = onMessageLongClick
                             )
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Sm)
                     ) {
                         Text(
                             text = message.content,
@@ -1431,7 +1437,7 @@ private fun MessageBubble(
                             text = formatTime(message.timestamp),
                             style = AppTypography.LabelMedium,
                             color = if (isDark) JuusColors.Dark.TextTime else JuusColors.TextTime,
-                            modifier = Modifier.padding(end = 4.dp, top = 2.dp)
+                            modifier = Modifier.padding(end = AppSpacing.Xs, top = AppSpacing.Xxs)
                         )
                     }
                 }
@@ -1478,7 +1484,7 @@ private fun MessageBubble(
                             text = displaySenderName,
                             style = AppTypography.LabelMediumSemiBold,
                             color = nameColor,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 2.dp)
+                            modifier = Modifier.padding(start = AppSpacing.Xxs, bottom = AppSpacing.Xxs)
                         )
                     }
                     Box(
@@ -1490,7 +1496,7 @@ private fun MessageBubble(
                                 onClick = {},
                                 onLongClick = onMessageLongClick
                             )
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Sm)
                     ) {
                         Text(
                             text = message.content,
@@ -1503,7 +1509,7 @@ private fun MessageBubble(
                             text = formatTime(message.timestamp),
                             style = AppTypography.LabelMedium,
                             color = if (isDark) JuusColors.Dark.TextTime else JuusColors.TextTime,
-                            modifier = Modifier.padding(start = 2.dp, top = 2.dp)
+                            modifier = Modifier.padding(start = AppSpacing.Xxs, top = AppSpacing.Xxs)
                         )
                     }
                 }
@@ -1547,7 +1553,7 @@ private fun MessageBubble(
                             text = voiceSenderName,
                             style = AppTypography.LabelMediumSemiBold,
                             color = nameColor,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 2.dp)
+                            modifier = Modifier.padding(start = AppSpacing.Xxs, bottom = AppSpacing.Xxs)
                         )
                     }
                     Box(
@@ -1559,7 +1565,7 @@ private fun MessageBubble(
                                 onClick = onVoiceClick,
                                 onLongClick = onMessageLongClick
                             )
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Sm)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(
@@ -1580,7 +1586,7 @@ private fun MessageBubble(
                             text = formatTime(message.timestamp),
                             style = AppTypography.LabelMedium,
                             color = if (isDark) JuusColors.Dark.TextTime else JuusColors.TextTime,
-                            modifier = Modifier.padding(start = 2.dp, top = 2.dp)
+                            modifier = Modifier.padding(start = AppSpacing.Xxs, top = AppSpacing.Xxs)
                         )
                     }
                 }
@@ -1620,7 +1626,7 @@ private fun MessageBubble(
                             text = stickerSenderName,
                             style = AppTypography.LabelMediumSemiBold,
                             color = nameColor,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 2.dp)
+                            modifier = Modifier.padding(start = AppSpacing.Xxs, bottom = AppSpacing.Xxs)
                         )
                     }
                     Box(
@@ -1661,7 +1667,7 @@ private fun MessageBubble(
 
                         if (isError) {
                             Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 12.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.Lg, horizontal = AppSpacing.Md),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
@@ -1679,7 +1685,7 @@ private fun MessageBubble(
                             text = formatTime(message.timestamp),
                             style = AppTypography.LabelMedium,
                             color = if (isDark) JuusColors.Dark.TextTime else JuusColors.TextTime,
-                            modifier = Modifier.padding(start = 2.dp, top = 2.dp)
+                            modifier = Modifier.padding(start = AppSpacing.Xxs, top = AppSpacing.Xxs)
                         )
                     }
                 }
@@ -1722,6 +1728,7 @@ private fun ChatInputBar(
     val hintColor = if (isDark) JuusColors.Dark.TextSecondary else JuusColors.TextSecondary
     val plusIconColor = if (isDark) JuusColors.Dark.TextSecondary else JuusColors.TextSecondary
     val canSend = inputText.isNotBlank() && enabled
+    val haptic = rememberBlyyHaptics()
 
     // 使用 TextFieldValue 精确控制光标位置，避免 String 状态下重组导致的光标跳变
     var textFieldValue by remember {
@@ -1756,17 +1763,21 @@ private fun ChatInputBar(
             // 关键：Row 的高度由 heightIn 约束的 BasicTextField 决定，不随 IME 动画抖动。
             .imePadding()
             .navigationBarsPadding()
-            .padding(horizontal = AppSpacing.Md, vertical = 8.dp),
+            .padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
     ) {
-        // JUUSTAGRAM 设计：加号按钮（圆形 36dp，bg-juustagram-bg，text-secondary）
+        // JUUSTAGRAM 设计：加号按钮（圆形 36dp 视觉，48dp 触达热区）
         Box(
             modifier = Modifier
+                .minimumInteractiveComponentSize()
                 .size(36.dp)
                 .clip(CircleShape)
                 .background(inputBg)
-                .clickable(onClick = onPlusClick),
+                .clickable {
+                    haptic(BlyyHaptic.Tick)
+                    onPlusClick()
+                },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -1778,7 +1789,7 @@ private fun ChatInputBar(
         }
         // JUUSTAGRAM 设计：圆角输入框（rounded-full, bg-juustagram-bg）
         // 修复光标延迟和移位：使用 TextFieldValue + Box 叠加 placeholder 避免条件渲染布局跳变
-        val fieldShape = RoundedCornerShape(20.dp)
+        val fieldShape = RoundedCornerShape(AppSpacing.Corner.Xl)
         val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
         androidx.compose.foundation.text.BasicTextField(
             value = textFieldValue,
@@ -1800,7 +1811,7 @@ private fun ChatInputBar(
                 }
                 .clip(fieldShape)
                 .background(inputBg)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = 14.dp, vertical = AppSpacing.Sm),
             textStyle = AppTypography.BodyMedium.copy(color = textColor),
             // 单行输入：固定高度，避免多行高度变化导致布局抖动
             maxLines = 1,
@@ -1812,6 +1823,7 @@ private fun ChatInputBar(
             keyboardActions = androidx.compose.foundation.text.KeyboardActions(
                 onSend = {
                     if (canSend) {
+                        haptic(BlyyHaptic.Confirm)
                         onSend()
                         keyboardController?.hide()
                     }
@@ -1831,13 +1843,17 @@ private fun ChatInputBar(
                 }
             }
         )
-        // JUUSTAGRAM 设计：发送按钮（圆形 36dp，bg-juustagram-primary，text-on-primary）
+        // JUUSTAGRAM 设计：发送按钮（圆形 36dp 视觉，48dp 触达热区）
         Box(
             modifier = Modifier
+                .minimumInteractiveComponentSize()
                 .size(36.dp)
                 .clip(CircleShape)
                 .background(if (canSend) sendActive else sendInactive)
-                .clickable(enabled = canSend, onClick = onSend),
+                .clickable(enabled = canSend) {
+                    haptic(BlyyHaptic.Confirm)
+                    onSend()
+                },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -2037,7 +2053,7 @@ private fun BackgroundPickerSheet(
                             .padding(AppSpacing.Sm)
                             .clip(RoundedCornerShape(AppSpacing.Corner.Sm))
                             .background(Color.Black.copy(alpha = 0.5f))
-                            .padding(horizontal = AppSpacing.Sm, vertical = 2.dp)
+                            .padding(horizontal = AppSpacing.Sm, vertical = AppSpacing.Xxs)
                     ) {
                         Text(text = effectiveSourceLabel, style = AppTypography.LabelSmall, color = Color.White)
                     }
@@ -2164,25 +2180,17 @@ private fun MessageActionSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(AppSpacing.Corner.Xxl))
                 .background(cardBg)
-                .padding(vertical = 8.dp)
+                .padding(vertical = AppSpacing.Sm)
         ) {
-            // 顶部标识条
-            Box(
-                modifier = Modifier
-                    .padding(top = 4.dp, bottom = 12.dp)
-                    .align(Alignment.CenterHorizontally)
-                    .width(32.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(dividerColor)
-            )
+            // 顶部统一拖拽手柄
+            BlyyDragHandle(modifier = Modifier.align(Alignment.CenterHorizontally))
             // 标题
             Text(
                 text = "消息操作",
                 style = AppTypography.TitleMediumBold.copy(color = textPrimary),
-                modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp)
+                modifier = Modifier.padding(start = AppSpacing.Xxl, end = AppSpacing.Xxl, bottom = AppSpacing.Sm)
             )
 
             // 编辑重发（仅用户消息）
@@ -2216,15 +2224,15 @@ private fun MessageActionSheet(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp)
-                    .clip(RoundedCornerShape(0.dp))
+                    .padding(top = AppSpacing.Xs)
+                    .clip(RoundedCornerShape(AppSpacing.Corner.None))
                     .background(dividerColor)
             ) {
                 TextButton(
                     onClick = onDismiss,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .padding(vertical = AppSpacing.Xs)
                 ) {
                     Text(
                         text = "取消",
@@ -2248,12 +2256,16 @@ private fun MessageActionItem(
     isLast: Boolean = false,
     onClick: () -> Unit
 ) {
+    val haptic = rememberBlyyHaptics()
     Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = 24.dp, vertical = 14.dp),
+                .clickable {
+                    haptic(BlyyHaptic.Tick)
+                    onClick()
+                }
+                .padding(horizontal = AppSpacing.Xxl, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -2261,7 +2273,7 @@ private fun MessageActionItem(
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Md))
                     .background(accentColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -2281,7 +2293,7 @@ private fun MessageActionItem(
                 Text(
                     text = subtitle,
                     style = AppTypography.BodySmall.copy(color = textSecondary.copy(alpha = 0.7f)),
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = Modifier.padding(top = AppSpacing.Xxs)
                 )
             }
         }
@@ -2317,30 +2329,22 @@ private fun MessageEditSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(AppSpacing.Corner.Xxl))
                 .background(cardBg)
-                .padding(vertical = 8.dp)
+                .padding(vertical = AppSpacing.Sm)
         ) {
-            // 顶部标识条
-            Box(
-                modifier = Modifier
-                    .padding(top = 4.dp, bottom = 12.dp)
-                    .align(Alignment.CenterHorizontally)
-                    .width(32.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(dividerColor)
-            )
+            // 顶部统一拖拽手柄
+            BlyyDragHandle(modifier = Modifier.align(Alignment.CenterHorizontally))
             // 标题行：图标 + 标题
             Row(
-                modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
+                modifier = Modifier.padding(start = AppSpacing.Xxl, end = AppSpacing.Xxl, bottom = AppSpacing.Lg),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Box(
                     modifier = Modifier
                         .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(AppSpacing.Corner.Chamfer))
                         .background(primaryColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -2361,8 +2365,8 @@ private fun MessageEditSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .padding(start = AppSpacing.Xxl, end = AppSpacing.Xxl, bottom = AppSpacing.Lg)
+                    .clip(RoundedCornerShape(AppSpacing.Corner.Md))
                     .background(warningBg)
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -2386,7 +2390,7 @@ private fun MessageEditSheet(
                 onValueChange = { editContent = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 20.dp)
+                    .padding(start = AppSpacing.Xxl, end = AppSpacing.Xxl, bottom = AppSpacing.Xl)
                     .heightIn(min = 80.dp),
                 label = { Text("消息内容") },
                 textStyle = AppTypography.BodyMedium,
@@ -2394,14 +2398,14 @@ private fun MessageEditSheet(
                     focusedBorderColor = primaryColor,
                     unfocusedBorderColor = dividerColor
                 ),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(AppSpacing.Corner.Xs2)
             )
 
             // 底部按钮区
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
+                    .padding(start = AppSpacing.Xxl, end = AppSpacing.Xxl, bottom = AppSpacing.Sm),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -2411,10 +2415,10 @@ private fun MessageEditSheet(
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(AppSpacing.Corner.Md))
                         .background(primaryColor)
                         .clickable { onSend(editContent) }
-                        .padding(horizontal = 24.dp, vertical = 10.dp),
+                        .padding(horizontal = AppSpacing.Xxl, vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
