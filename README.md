@@ -15,83 +15,83 @@
   <a href="#-安装">安装</a> •
   <a href="#-技术栈">技术栈</a> •
   <a href="#-项目结构">项目结构</a> •
+  <a href="#-测试">测试</a> •
   <a href="#-贡献指南">贡献指南</a> •
   <a href="#-致谢">致谢</a>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Android-green.svg" alt="Platform">
-  <img src="https://img.shields.io/badge/Language-Kotlin-orange.svg" alt="Language">
+  <img src="https://img.shields.io/badge/Language-Kotlin%202.1-orange.svg" alt="Language">
+  <img src="https://img.shields.io/badge/Jetpack%20Compose-BOM-blueviolet.svg" alt="Compose">
+  <img src="https://img.shields.io/badge/API-24%2B-brightgreen.svg" alt="API">
   <img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg" alt="License">
-  <img src="https://img.shields.io/badge/API-26%2B-brightgreen.svg" alt="API">
-  <img src="https://img.shields.io/badge/Jetpack%20Compose-1.7-blueviolet.svg" alt="Compose">
 </p>
 
 ---
 
 ## 📖 项目简介
 
-碧蓝语音是一款专为碧蓝航线玩家设计的现代化语音播放器应用，基于 Kotlin + Jetpack Compose 构建，提供双主题风格（经典紫色 / 指挥中心 HUD）、流畅的动画、丰富的小游戏与 AI 对话能力，让舰娘语音欣赏变成一种享受。
+碧蓝语音（BLYY）是一款专为碧蓝航线玩家设计的多功能舰娘应用，基于 Kotlin 2.1 + Jetpack Compose 构建，涵盖**语音播放、舰娘图鉴、秘书舰桌面互动、AI 角色扮演对话、猜舰娘小游戏、水印相机**等能力。应用内置全量舰娘本地头像匹配引擎，支持双主题风格（经典紫色 / 指挥中心 HUD）与流畅的动画体验。
 
-### ✨ 功能特性
+## ✨ 功能特性
 
-#### 🎨 视觉与交互
-- **Material Design 3** 声明式 UI，深色/浅色主题自动适配
-- **双主题切换**：经典风格 / 指挥中心（Command Center）HUD 风格
-- **毛玻璃效果**、切角矩形面板、动态渐变背景
-- **8dp 网格间距系统**、统一动画规范、按压反馈
-- **小屏/手表端自适应**：检测屏幕最小宽度 ≤ 360dp 时自动缩放 UI 元素
+### 🏠 底部导航三大主页
 
-#### 🚢 舰娘管理
-- 完整的舰娘列表浏览，按阵营/类型/稀有度多维筛选
-- 收藏喜爱的舰娘到后宅，长按卡片支持更多操作
-- 誓约粉色特效、稀有度光晕、收藏徽章
-- 卡片式布局 + 骨架屏加载
+#### 后宅（Home）
+- 誓约舰娘的后宅展示页，AGSL 着色器驱动的誓约粉色动态光效、稀有度光晕、收藏徽章
+- 小屏/手表端自适应：检测屏幕最小宽度 ≤ 360dp 时自动缩放 UI
 
-#### 🎵 语音播放
-- 全量舰娘语音台词，支持中/日双语切换
+#### 船坞（Gallery）
+- 完整舰娘图鉴，按阵营/舰种/稀有度多维筛选，支持搜索
+- **双档案模式**：舰船档案（DOCK）/ 成员档案（STUDENT）动态切换
+- **长按舰娘头像誓约/解除誓约**，誓约后立绘自动切换婚皮
+- **本地头像匹配引擎**：内置 1000+ 高清头像资产，全量 wiki 图鉴 999/999 命中（详见[头像匹配系统](#-头像匹配系统)）
+- 骨架屏加载 + 卡片飞入动画
+
+#### 关于（About）
+- 版本信息、检查更新（对接网盘发布链接）
+- 缓存管理、开源依赖清单
+
+### 🎵 语音播放
+- 全量舰娘语音台词，中/日双语切换
 - 播放模式：单曲循环 / 列表循环 / 随机播放
-- **稍后播放队列**：长按语音条目添加到队列，支持队列管理
-- 媒体会话控制（Media3 ExoPlayer + MediaSession）
-- 锁屏通知栏控制、耳机线控支持
+- **稍后播放队列**：长按语音条目入队，支持队列管理与播放全部
+- Media3 ExoPlayer + MediaSession：锁屏控制、耳机线控、前台服务
 
-#### 🎭 秘书舰模式
-- 可拖动的舰娘立绘小人（可隐藏到屏幕外）
-- 点击立绘随机播放语音
-- 沉浸式语音播放界面
-- 桌面悬浮窗（需要权限）
+### 🎭 秘书舰模式
+- 可拖动的舰娘小人悬浮窗（SYSTEM_ALERT_WINDOW），点击随机播放语音
+- **随机秘书舰**：按稀有度权重从船坞抽取每日秘书舰
+- Spine 骨骼动画渲染 SD 小人，支持誓约婚皮立绘
 
-#### 🤖 碧蓝航线助手
-- **查玩家**：查询指挥官信息（等级、UID、收集率、资源、委托、科研、待办副本）
-- **查建造**：查询玩家建造记录（支持分页，最多 500 条）
+### 🐦 啾信（AI 角色扮演对话）
+- 与 AI 舰娘进行沉浸式角色扮演对话，支持多轮上下文
+- **舰娘人格管理**：为每名舰娘配置人设、开场白、表情包
+- **舰娘长期记忆**：对话摘要自动沉淀，跨会话记忆舰娘性格
+- 会话列表管理、啾信语音（对话内容驱动 TTS 语音回复）
+- 在「设置 → 啾信配置」配置 API Key 与模型参数
+
+### 🤖 碧蓝航线助手
+- **查玩家**：指挥官信息（等级、UID、收集率、资源、委托、科研、待办副本）
+- **查建造**：建造记录分页查询（最多 500 条）
 - UID 与服务器在「设置 → 碧蓝航线助手」统一配置
 
-#### 🐦 啾信（AI 对话）
-- 与 AI 舰娘进行角色扮演对话
-- 支持多轮上下文、自定义人设
-- 在「设置 → 啾信配置」中配置 API Key
+### 🎮 猜舰娘小游戏
+- **看图识舰娘**：根据立绘辨认舰娘
+- **听音识舰娘**：根据语音辨认舰娘
+- 答题得分、答题历史回顾、全服排行榜
 
-#### 🎮 小游戏
-- **看图识舰娘**：通过立绘辨认舰娘
-- **听音识舰娘**：通过语音辨认舰娘
-- 答题得分系统，错题回顾
+### 🎨 更多功能
+- **SD 资源图鉴**：浏览 Spine 骨骼动画 SD 小人资源，支持本地导入整理（zstd 压缩解析）
+- **Live2D 浏览**：WebView 嵌入 l2d.su 模型平台，浮窗互动
+- **水印相机**：CameraX 拍照 + 可定制水印排版（相框/标题/署名），支持截图编辑
+- **应用图标设置**：多种启动器图标风格任选
 
-#### 🎨 Live2D 模型浏览
-- 浏览社区 Live2D 资源
-- WebView 嵌入浏览，可放大查看
-- 浮窗互动体验
-
-#### 📱 现代化架构
-- **MVVM** 架构模式 + Clean Architecture 分层
-- **Jetpack Compose** 声明式 UI
-- **Hilt** 依赖注入
-- **Kotlin Flow** 响应式编程
-- **Room** 本地数据库 + **DataStore** 偏好存储
-- **Media3 ExoPlayer** 音频播放
-
-#### ⌚ 多端适配
-- 完整支持手机、平板、可折叠设备
-- 智能检测小屏设备（手表等）并自动缩放 UI
+### 🌗 视觉与交互
+- Material Design 3，深色/浅色主题自动适配
+- **双主题**：经典风格 / 指挥中心（Command Center）HUD 风格
+- 毛玻璃效果、切角矩形面板、AGSL 深度阴影系统（Depth 阴影令牌/受光渐变/按钮辉光投影）
+- 8dp 网格间距系统、统一动画规范、切角形状（BlyyShapes）
 
 ## 📸 截图预览
 
@@ -105,12 +105,12 @@
 
 | 工具 | 版本要求 |
 |------|---------|
-| Android Studio | Ladybug (2024.2.1) 或更高 |
-| JDK | 17 或更高 |
-| Kotlin | 1.9.0 或更高 |
-| Gradle | 8.7+（项目自带 wrapper） |
+| Android Studio | 最新稳定版（AGP 9.1.1 需较新版本支持） |
+| JDK | 17（Gradle Toolchain 自动对齐） |
+| Kotlin | 2.1.10（Compose Compiler 插件随版本启用） |
+| Gradle | 9.6.1（项目自带 wrapper，无需手动安装） |
 | Android SDK | minSdk 24 / targetSdk 35 / compileSdk 36 |
-| 设备 | Android 8.0 (API 26) 或更高 |
+| 设备 | Android 7.0 (API 24) 或更高 |
 
 ## 📥 安装
 
@@ -124,7 +124,7 @@
 
 2. **打开项目**
    - 使用 Android Studio 打开项目根目录
-   - 等待 Gradle 同步完成
+   - 等待 Gradle 同步完成（首次会自动下载 libgdx natives）
 
 3. **构建 APK**
    ```bash
@@ -137,116 +137,157 @@
 
 4. **安装到设备**
    ```bash
+   ./gradlew :app:installDebug
+   # 或
    adb install app/build/outputs/apk/debug/app-debug.apk
    ```
 
 ### 下载已发布版本
 
-前往 [Releases](https://github.com/oneroomlife/blyy/releases) 页面下载最新版本的 APK。
-
-> 提示：项目当前 `versionName = 1.4.0`，对应 `versionCode = 1`。发布前请同步修改 `app/build.gradle.kts`。
+前往 [Releases](https://github.com/oneroomlife/blyy/releases) 或应用内「关于 → 检查更新」下载最新 APK（当前版本 `2.4.1`，发布前请同步修改 `app/build.gradle.kts` 中的 `versionName`）。
 
 ## 📖 使用说明
 
-### 碧蓝航线小助手
+### 导航结构
 
-1. 打开应用，从首页侧拉菜单进入 **碧蓝航线助手**。
-2. 首次使用会提示「未配置查询参数」，点击 **去设置**。
-3. 在「设置 → 碧蓝航线助手」中填入：
-   - **默认 UID**：游戏内玩家 UID
-   - **默认服务器**：服务器名称或 ID
-4. 返回助手页面，切换「查玩家」/「查建造」分区，点击对应查询按钮即可。
-5. UID/服务器集中存储在 DataStore 中，查询时自动读取，切换分区时各自结果独立保留。
+- **底部三个主页面**：后宅 / 船坞（舰船⇆成员档案切换）/ 关于
+- **侧拉菜单**：语音播放、秘书舰、啾信、碧蓝航线助手、猜舰娘、SD 资源图鉴、Live2D、水印相机、设置
 
+### 碧蓝航线助手
+
+1. 从侧拉菜单进入 **碧蓝航线助手**，首次使用提示「未配置查询参数」，点击 **去设置**
+2. 在「设置 → 碧蓝航线助手」填入默认 UID 与服务器
+3. 返回助手页切换「查玩家」/「查建造」分区查询
 
 ### 啾信（AI 对话）
 
-1. 从侧拉菜单进入 **啾信**。
-2. 首次使用会提示配置 API Key，点击 **去设置**。
-3. 在「设置 → 啾信配置」填入 API Key 和模型参数。
-4. 返回啾信页面，选择舰娘人设开始对话。
-
-### 切换主题
-
-在「设置 → 界面风格」中开启/关闭 **指挥中心 UI**，即可在经典风格与 HUD 风格之间切换。
+1. 从侧拉菜单进入 **啾信**，首次使用引导配置 API Key
+2. 在「设置 → 啾信配置」填入 API Key 和模型参数；在「啾信舰娘配置」为舰娘创建人格
+3. 返回啾信页面选择舰娘人设开始对话，对话会自动沉淀长期记忆
 
 ### 稍后播放队列
 
-1. 在语音列表页长按某条语音，选择 **稍后播放** 即可加入队列。
-2. 播放控制栏的 **列表按钮** 打开队列弹窗。
-3. 队列弹窗中支持：点击单项播放、播放全部、清空列表、移除单项。
+1. 语音列表页长按某条语音选择 **稍后播放** 入队
+2. 播放控制栏的 **列表按钮** 打开队列弹窗，支持单项播放/播放全部/清空/移除
 
-### Live2D 模型浏览
+### 切换主题
 
-在侧拉菜单中点击 **查看 Live2D** 进入 L2D 浏览页面。
+在「设置 → 界面风格」开启/关闭 **指挥中心 UI**，即可在经典风格与 HUD 风格间切换。
+
+### 秘书舰
+
+1. 后宅长按舰娘卡片或从侧拉菜单进入 **秘书舰模式**
+2. 授予悬浮窗权限后，舰娘小人常驻屏幕，点击随机播放语音
+3. 「随机秘书舰」页面可开启每日按稀有度自动抽取
 
 ## 🏗️ 技术栈
 
-### 核心技术
-
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| [Kotlin](https://kotlinlang.org/) | 1.9+ | 主要开发语言 |
-| [Jetpack Compose](https://developer.android.com/jetpack/compose) | BOM | 声明式 UI 框架 |
+| [Kotlin](https://kotlinlang.org/) | 2.1.10 | 开发语言（KSP + Compose Compiler 插件） |
+| [Jetpack Compose](https://developer.android.com/jetpack/compose) | BOM | 声明式 UI 框架 + Navigation Compose |
 | [Material Design 3](https://m3.material.io/) | - | UI 设计系统 |
-| [Hilt](https://dagger.dev/hilt/) | 2.59 | 依赖注入 |
-| [Kotlin Flow](https://kotlinlang.org/docs/flow.html) | - | 响应式编程 |
-| [Room](https://developer.android.com/training/data-storage/room) | 2.6+ | 本地数据库 |
-| [DataStore Preferences](https://developer.android.com/topic/libraries/architecture/datastore) | - | 偏好设置存储 |
-| [Media3 ExoPlayer](https://developer.android.com/media/media3) | 1.3+ | 音频播放 |
-| [OkHttp](https://square.github.io/okhttp/) | 4.x | 网络请求 |
-| [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization) | 1.6+ | JSON 序列化 |
-| [Coil](https://coil-kt.github.io/coil/) | 2.6+ | 图片加载 |
-| [Jsoup](https://jsoup.org/) | 1.18+ | HTML 解析 |
-| [compose-shimmer](https://github.com/valentinilk/compose-shimmer) | 1.3+ | 骨架屏动画 |
+| [Hilt](https://dagger.dev/hilt/) | 2.59.2 | 依赖注入（KSP 编译） |
+| [Room](https://developer.android.com/training/data-storage/room) | 2.8.4 | 本地数据库（舰娘/答题历史） |
+| [DataStore Preferences](https://developer.android.com/topic/libraries/architecture/datastore) | 1.2.0 | 偏好与玩家设置存储 |
+| [Media3 ExoPlayer](https://developer.android.com/media/media3) | 1.3.1 | 音频播放 + MediaSession |
+| [Coil](https://coil-kt.github.io/coil/) | 2.7.0 | 图片加载（含 GIF） |
+| [OkHttp](https://square.github.io/okhttp/) | 4.12.0 | 网络请求 |
+| [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization) | 1.10.0 | JSON 序列化 |
+| [Jsoup](https://jsoup.org/) | 1.18.1 | wiki HTML 解析 |
+| [Spine + libgdx](https://esotericsoftware.com/spine-runtimes) | 3.8.99.1 / 1.13.5 | SD 小人骨骼动画运行时 |
+| [CameraX](https://developer.android.com/media/camera/camerax) | 1.6.1 | 水印相机 |
+| [pinyin4j](https://github.com/belerweb/pinyin4j) | 2.5.1 | 中文转拼音（头像/SD 资源匹配） |
+| [zstd-jni](https://github.com/luben/zstd-jni) | 1.5.7 | SD 资源压缩包解析 |
+| [compose-shimmer](https://github.com/valentinilk/compose-shimmer) | 1.3.3 | 骨架屏动画 |
 
-完整依赖与许可证信息见 [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)。
+完整依赖与许可证信息见 [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)，架构设计详见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ## 📁 项目结构
 
 ```
 blyy/
 ├── app/                                # Android 应用模块
-│   ├── build.gradle.kts                # 应用构建脚本
+│   ├── build.gradle.kts                # 应用构建脚本（含 libgdx natives 提取任务）
 │   ├── lint-baseline.xml               # Lint 基线
 │   ├── proguard-rules.pro              # R8/ProGuard 规则
-│   └── src/main/
-│       ├── AndroidManifest.xml         # 应用清单
-│       ├── java/com/azurlane/blyy/
-│       │   ├── MainActivity.kt         # 主入口（含侧拉菜单）
-│       │   ├── data/                   # 数据层
-│       │   │   ├── local/              # Room + DataStore
-│       │   │   ├── model/              # 数据模型
-│       │   │   └── repository/         # 数据仓库
-│       │   ├── di/                     # Hilt 依赖注入
-│       │   ├── service/                # Media3 PlaybackService
-│       │   ├── ui/                     # 表现层
-│       │   │   ├── components/         # 公共 UI 组件
-│       │   │   ├── screens/            # 界面屏幕
-│       │   │   └── theme/              # 主题与设计系统
-│       │   └── viewmodel/              # ViewModel 层
-│       └── res/                        # 资源（图片、字符串、主题）
+│   └── src/
+│       ├── main/
+│       │   ├── AndroidManifest.xml     # 应用清单
+│       │   ├── assets/
+│       │   │   ├── blhx_avatar/        # 舰娘本地头像资产（1100+，拼音命名）
+│       │   │   ├── blhx_sd/            # 舰娘 SD 小人资源（Spine 骨骼）
+│       │   │   └── photo_frame/        # 水印相机相框素材
+│       │   ├── java/com/azurlane/blyy/
+│       │   │   ├── MainActivity.kt     # 主入口
+│       │   │   ├── SecretaryOverlayService.kt  # 秘书舰悬浮窗服务
+│       │   │   ├── data/               # 数据层
+│       │   │   │   ├── local/          # Room（AppDatabase/DAO）+ DataStore
+│       │   │   │   ├── model/          # 数据模型
+│       │   │   │   └── repository/     # 数据仓库（wiki 抓取/语音解析）
+│       │   │   ├── di/                 # Hilt 依赖注入
+│       │   │   ├── domain/             # 用例层（选秘书舰等 UseCase）
+│       │   │   ├── service/            # Media3 PlaybackService
+│       │   │   ├── ui/
+│       │   │   │   ├── components/     # 公共 UI 组件（ShipCard 等）
+│       │   │   │   ├── icons/          # 自定义图标
+│       │   │   │   ├── screens/        # 26 个界面屏幕
+│       │   │   │   └── theme/          # 主题与设计系统（Token/Depth 阴影）
+│       │   │   ├── util/               # 工具层
+│       │   │   │   ├── AvatarMatcher.kt        # 头像匹配核心（纯 Kotlin）
+│       │   │   │   ├── LocalAvatarResolver.kt  # assets 头像解析壳
+│       │   │   │   ├── SDResourceManager.kt    # SD 资源管理
+│       │   │   │   ├── WebViewHtmlFetcher.kt   # wiki 抓取器
+│       │   │   │   └── ...             # 更新检查/缓存/权限/水印合成等
+│       │   │   └── viewmodel/          # ViewModel 层（20+）
+│       │   └── res/                    # 资源（图片、字符串、主题）
+│       └── test/                       # JVM 单元测试
+│           └── util/AvatarMatcherTest.kt       # 头像匹配全量回归测试
+│           └── resources/                      # wiki 全量舰名 + 资产快照
 ├── docs/                               # 项目文档
-│   ├── DEPENDENCIES.md                 # 依赖清单
+│   ├── ARCHITECTURE.md                 # 架构与 API 文档
+│   ├── DEPENDENCIES.md                 # 依赖清单与许可证
+│   ├── UI_TOKEN_GUIDE.md               # 设计 Token 速查表
+│   ├── USAGE.md                        # 使用说明
 │   └── screenshots/                    # 截图
-├── .github/                            # GitHub 配置
-│   ├── ISSUE_TEMPLATE/                 # Issue 模板
-│   └── workflows/                      # CI 工作流
-├── gradle/                             # Gradle Wrapper
-│   ├── libs.versions.toml              # 版本目录
+├── .github/                            # GitHub 配置（Issue 模板 / CI 工作流）
+├── gradle/
+│   ├── libs.versions.toml              # 版本目录（依赖唯一事实来源）
 │   └── wrapper/
-├── agent-skill-eval/                   # 技能评估（仅本地，不参与构建）
-├── .gitignore                          # Git 忽略配置
+├── scripts/                            # 本地工具脚本（不入版本控制）
+├── .gitignore / .gitattributes
 ├── build.gradle.kts                    # 根 Gradle 脚本
 ├── gradle.properties                   # Gradle 属性
-├── gradlew / gradlew.bat               # Gradle Wrapper 脚本
+├── gradlew / gradlew.bat               # Gradle Wrapper
 ├── settings.gradle.kts                 # 项目设置
 ├── README.md                           # 项目说明（本文档）
-├── CODE_OF_CONDUCT.md                  # 行为准则
-├── CONTRIBUTING.md                     # 贡献指南
-├── LICENSE                             # GPL v3 许可证
-└── SECURITY.md                         # 安全策略
+├── CODE_OF_CONDUCT.md / CONTRIBUTING.md / LICENSE / SECURITY.md
 ```
+
+## 🧩 头像匹配系统
+
+应用内置离线优先的舰娘头像匹配引擎，是船坞/后宅/秘书舰等所有场景的立绘来源：
+
+- **资产约定**：`assets/blhx_avatar/` 下以「舰名无声调全拼 + 皮肤后缀」命名（如 `boge.webp` ← 博格、`z23_h.webp` ← Z23 婚皮、`dafeng_alter.webp` ← 大凤·META）
+- **十级匹配策略**：手动映射 → 特殊变体（META/μ兵装/幼女）→ 改造/尾部标记 → 原始名/拼音精确 → 去后缀变体 → 包含/反向包含/模糊子串兜底
+- **皮肤形态硬规则**：META/μ兵装/改造立绘缺失时拒绝回退基础形态（避免错图），改走网络 URL 兜底
+- **全量回归测试**：`AvatarMatcherTest` 用 wiki 图鉴 999 个舰名逐一校验，当前 **999/999 命中、零碰撞**；新增资源或舰娘后运行 `./gradlew :app:testDebugUnitTest --tests "*AvatarMatcherTest*"` 防回归
+
+## 🧪 测试
+
+```bash
+# 运行全部 JVM 单元测试
+./gradlew :app:testDebugUnitTest
+
+# 头像匹配全量回归（999 舰名逐一校验）
+./gradlew :app:testDebugUnitTest --tests "com.azurlane.blyy.util.AvatarMatcherTest"
+```
+
+提交前建议运行 `./gradlew :app:lint`（项目带 lint-baseline.xml）。
+
+## ⚙️ CI
+
+GitHub Actions（[android.yml](.github/workflows/android.yml)）在 push / PR 时自动以 JDK 17 构建并执行检查。
 
 ## 🤝 贡献指南
 
@@ -286,7 +327,8 @@ blyy/
   - 间距：`AppSpacing`（8dp 网格）
   - 形状：`BlyyShapes`（切角矩形）
   - 动画：`AppAnimation`
-- 提交前请运行 `./gradlew :app:lint`
+  - 深度阴影：`AppDepth`（参考 [UI Token 速查表](docs/UI_TOKEN_GUIDE.md)）
+- 新增头像资源请放入 `assets/blhx_avatar/` 并遵循拼音命名约定，跑一遍头像回归测试
 
 ## 📋 行为准则
 
@@ -315,7 +357,8 @@ blyy/
 
 ### 数据与资源来源
 - 📚 [碧蓝航线 Wiki](https://wiki.biligame.com/blhx/) - 舰娘数据与立绘来源
-- 🎭 [**l2d.su**](https://l2d.su/) - **Live2D 模型资源平台**。感谢 [l2d.su](https://l2d.su/) 提供高质量的 Live2D 模型浏览服务，BLYY 的 Live2D 模块正是基于该网站构建。
+- 🎭 [**l2d.su**](https://l2d.su/) - **Live2D 模型资源平台**。感谢 [l2d.su](https://l2d.su/) 提供高质量的 Live2D 模型浏览服务，BLYY 的 Live2D 模块正是基于该网站构建
+- 🦴 [Spine Runtime](https://esotericsoftware.com/spine-runtimes) - SD 小人骨骼动画运行时
 - 🎨 [Material Design](https://material.io/) - 设计语言与组件规范
 - 🛠️ [Jetpack Compose](https://developer.android.com/jetpack/compose) - 现代化的 Android UI 工具包
 
