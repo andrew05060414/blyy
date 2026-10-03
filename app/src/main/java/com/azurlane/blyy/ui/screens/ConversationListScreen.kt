@@ -83,6 +83,7 @@ import com.azurlane.blyy.data.model.ApiConfig
 import com.azurlane.blyy.data.model.PersonaConfig
 import com.azurlane.blyy.ui.components.BlyyBottomSheet
 import com.azurlane.blyy.ui.components.BlyyHaptic
+import com.azurlane.blyy.ui.components.RobustAvatar
 import com.azurlane.blyy.ui.components.rememberBlyyHaptics
 import com.azurlane.blyy.ui.theme.AppAnimation
 import com.azurlane.blyy.ui.theme.AppSpacing
