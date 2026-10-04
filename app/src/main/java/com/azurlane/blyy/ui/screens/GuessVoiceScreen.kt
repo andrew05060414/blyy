@@ -181,8 +181,15 @@ fun GuessByVoiceScreen(
             viewModel.goToNextQuestion()
         },
         onReplay = {
-            viewModel.playRandomVoiceForCurrentShip { url, _ ->
-                playerViewModel.playSingleVoice(url)
+            // B9 修复：按钮文案是"反复回放"，行为必须与之对齐——重播当前题目语音；
+            // 仅在当前题目无音频（异常态）时才回退为随机播放该舰娘的其他语音
+            val currentUrl = state.currentVoice?.audioUrl
+            if (!currentUrl.isNullOrBlank()) {
+                playerViewModel.playSingleVoice(currentUrl)
+            } else {
+                viewModel.playRandomVoiceForCurrentShip { url, _ ->
+                    playerViewModel.playSingleVoice(url)
+                }
             }
         },
         onRequestHint = viewModel::requestHint,

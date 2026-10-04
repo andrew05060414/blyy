@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Crop
 import androidx.compose.material.icons.rounded.Fullscreen
+import androidx.compose.material.icons.rounded.ImageNotSupported
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.Visibility
@@ -53,6 +54,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -260,6 +262,8 @@ private fun ModernGuessImageContent(
                     cropRegion = state.cropRegion,
                     difficulty = state.difficulty,
                     isLoading = state.isLoadingHint,
+                    // 题目生成失败（重试耗尽/同步中）时传错误信息，卡片内区分"加载中"与"失败"（B7 修复）
+                    errorMessage = state.errorMessage,
                     showFullImage = state.showAnswer && state.difficulty == ImageDifficulty.HARD
                 )
 
@@ -381,6 +385,7 @@ private fun ImageCard(
     cropRegion: CropRegion?,
     difficulty: ImageDifficulty,
     isLoading: Boolean,
+    errorMessage: String? = null,
     showFullImage: Boolean = false
 ) {
     val scale by animateFloatAsState(
@@ -444,6 +449,31 @@ private fun ImageCard(
                         .fillMaxSize()
                         .scale(imageScale),
                     contentScale = ContentScale.Fit
+                )
+            }
+        } else if (errorMessage != null) {
+            // 题目生成失败（如重试耗尽/数据同步中）— 展示真实原因，引导点击「下一题」（B7 修复）
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.Md),
+                modifier = Modifier.padding(AppSpacing.Lg)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ImageNotSupported,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(40.dp)
+                )
+                Text(
+                    errorMessage,
+                    style = AppTypography.BodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    "点击下方「下一题」重新出题",
+                    style = AppTypography.BodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }
         } else {
