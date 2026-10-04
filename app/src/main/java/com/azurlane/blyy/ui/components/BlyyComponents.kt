@@ -588,13 +588,19 @@ fun BlyyPrimaryButton(
             verticalAlignment = Alignment.CenterVertically
         ) {
             icon?.let {
-                Icon(it, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(if (isWatch) 16.dp else 20.dp))
+                Icon(
+                    it,
+                    contentDescription = null,
+                    // 禁用态用 onSurfaceVariant — 灰渐变底上白字对比度不足
+                    tint = if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(if (isWatch) 16.dp else 20.dp)
+                )
                 Spacer(Modifier.width(AppSpacing.Sm))
             }
             Text(
                 text = text,
                 style = AppTypography.ButtonText,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.SemiBold
             )
         }
@@ -624,6 +630,8 @@ fun BlyySecondaryButton(
     val panelFill = if (isDark) AppColors.Panel.FillDark() else AppColors.Panel.FillLight()
     val shadowAmbient = if (isDark) AppColors.Depth.AmbientDark else AppColors.Depth.AmbientLight
     val shadowSpot = if (isDark) AppColors.Depth.SpotDark else AppColors.Depth.SpotLight
+    // 禁用态文字/图标退为 onSurfaceVariant — 与 BlyyPrimaryButton 禁用态一致
+    val contentColor = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
 
     Box(
         modifier = modifier
@@ -655,13 +663,13 @@ fun BlyySecondaryButton(
             verticalAlignment = Alignment.CenterVertically
         ) {
             icon?.let {
-                Icon(it, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(if (isWatch) 16.dp else 20.dp))
+                Icon(it, contentDescription = null, tint = contentColor, modifier = Modifier.size(if (isWatch) 16.dp else 20.dp))
                 Spacer(Modifier.width(AppSpacing.Sm))
             }
             Text(
                 text = text,
                 style = AppTypography.ButtonText,
-                color = MaterialTheme.colorScheme.primary,
+                color = contentColor,
                 fontWeight = FontWeight.Medium
             )
         }

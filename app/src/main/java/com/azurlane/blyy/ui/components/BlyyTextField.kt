@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
@@ -70,6 +71,7 @@ fun BlyyTextField(
     enabled: Boolean = true,
     singleLine: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     val isCommandCenter = LocalUiStyle.current.isCommandCenter()
@@ -154,6 +156,7 @@ fun BlyyTextField(
                             else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                         ),
                         keyboardOptions = keyboardOptions,
+                        keyboardActions = keyboardActions,
                         visualTransformation = visualTransformation,
                         cursorBrush = SolidColor(
                             if (isError) MaterialTheme.colorScheme.error

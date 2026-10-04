@@ -11,15 +11,11 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -28,49 +24,28 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Crop
-import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.Image
-import androidx.compose.material.icons.rounded.Lightbulb
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,10 +56,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
@@ -93,19 +64,28 @@ import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyConfirmDialog
 import com.azurlane.blyy.ui.components.BlyyHaptic
 import com.azurlane.blyy.ui.components.rememberBlyyHaptics
-import com.azurlane.blyy.ui.components.BlyyTextField
 import com.azurlane.blyy.ui.components.BlyyTopBar
-import com.azurlane.blyy.ui.theme.AppColors
+import com.azurlane.blyy.ui.screens.guess.GuessActionButton
+import com.azurlane.blyy.ui.screens.guess.GuessAnswerCard
+import com.azurlane.blyy.ui.screens.guess.GuessCorrectCard
+import com.azurlane.blyy.ui.screens.guess.GuessDifficultyOption
+import com.azurlane.blyy.ui.screens.guess.GuessDifficultySelector
+import com.azurlane.blyy.ui.screens.guess.GuessErrorBanner
+import com.azurlane.blyy.ui.screens.guess.GuessHintButton
+import com.azurlane.blyy.ui.screens.guess.GuessHintsSection
+import com.azurlane.blyy.ui.screens.guess.GuessInputField
+import com.azurlane.blyy.ui.screens.guess.GuessScoreBanner
+import com.azurlane.blyy.ui.screens.guess.GuessScoreChip
+import com.azurlane.blyy.ui.screens.guess.GuessSettlementDialog
+import com.azurlane.blyy.ui.screens.guess.GuessWrongCard
 import com.azurlane.blyy.ui.theme.AppSpacing
 import com.azurlane.blyy.ui.theme.AppTypography
-import com.azurlane.blyy.ui.theme.LocalIsDark
-import com.azurlane.blyy.ui.theme.AppAnimation
+import com.azurlane.blyy.viewmodel.CropRegion
 import com.azurlane.blyy.viewmodel.GuessGameUiState
 import com.azurlane.blyy.viewmodel.GuessResult
 import com.azurlane.blyy.viewmodel.GuessShipViewModel
 import com.azurlane.blyy.viewmodel.ImageDifficulty
 import com.azurlane.blyy.viewmodel.PlayerViewModel
-import com.azurlane.blyy.viewmodel.GameScore
 
 @UnstableApi
 @Composable
@@ -142,7 +122,7 @@ fun GuessByImageScreen(
     }
 
     if (state.showSettlement) {
-        ModernSettlementDialog(
+        GuessSettlementDialog(
             score = state.score,
             onDismiss = { viewModel.hideSettlement() },
             onExit = {
@@ -178,7 +158,10 @@ fun GuessByImageScreen(
         onHistory = onHistory,
         onInputChange = viewModel::onInputChanged,
         onSubmit = {
-            haptic(BlyyHaptic.Confirm)
+            // 空输入提交只会设置 errorMessage（不产生作答结果），不应给确认触觉
+            if (state.inputText.isNotBlank()) {
+                haptic(BlyyHaptic.Confirm)
+            }
             viewModel.checkAnswer()
         },
         onNext = {
@@ -192,13 +175,13 @@ fun GuessByImageScreen(
                 playerViewModel.playSingleVoice(url)
             }
         },
+        onRequestHint = viewModel::requestHint,
         onDifficultyChange = viewModel::setDifficulty,
         onShowAnswer = viewModel::showAnswer,
         onShowSettlement = viewModel::showSettlement
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ModernGuessImageContent(
     state: GuessGameUiState,
@@ -208,12 +191,15 @@ private fun ModernGuessImageContent(
     onSubmit: () -> Unit,
     onNext: () -> Unit,
     onReplayVoice: () -> Unit,
+    onRequestHint: () -> Unit,
     onDifficultyChange: (ImageDifficulty) -> Unit,
     onShowAnswer: () -> Unit,
     onShowSettlement: () -> Unit
 ) {
     val scrollState = rememberScrollState()
-    val isDark = LocalIsDark.current
+    val isEasy = state.difficulty == ImageDifficulty.EASY
+    // 答对/已揭示答案后，主操作切换为"下一题"（主次按钮互换引导下一步）
+    val answered = state.lastResult == GuessResult.CORRECT || state.showAnswer
 
     AdaptiveScreenBackground {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -226,10 +212,10 @@ private fun ModernGuessImageContent(
                         Icon(
                             Icons.Rounded.History,
                             contentDescription = "历史记录",
-                            tint = MaterialTheme.colorScheme.onSurface
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                    ScoreChip(totalScore = state.score.totalScore)
+                    GuessScoreChip(totalScore = state.score.totalScore)
                 }
             )
 
@@ -241,19 +227,33 @@ private fun ModernGuessImageContent(
                 verticalArrangement = Arrangement.spacedBy(AppSpacing.Md),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                DifficultySelector(
-                    currentDifficulty = state.difficulty,
-                    onDifficultyChange = onDifficultyChange
+                GuessDifficultySelector(
+                    current = state.difficulty,
+                    options = listOf(
+                        GuessDifficultyOption(
+                            value = ImageDifficulty.EASY,
+                            title = "简单模式",
+                            description = "显示完整立绘",
+                            icon = Icons.Rounded.Fullscreen
+                        ),
+                        GuessDifficultyOption(
+                            value = ImageDifficulty.HARD,
+                            title = "困难模式",
+                            description = "只显示部分立绘",
+                            icon = Icons.Rounded.Crop
+                        )
+                    ),
+                    onSelect = onDifficultyChange
                 )
 
                 if (state.difficulty == ImageDifficulty.HARD) {
-                    HintBanner(
+                    GuessHintBanner(
                         text = "困难模式：只显示部分立绘",
                         icon = Icons.Rounded.Crop
                     )
                 }
 
-                ScoreBanner(score = state.currentQuestionScore)
+                GuessScoreBanner(score = state.currentQuestionScore)
 
                 ImageCard(
                     imageUrl = state.currentImageUrl,
@@ -263,13 +263,30 @@ private fun ModernGuessImageContent(
                     showFullImage = state.showAnswer && state.difficulty == ImageDifficulty.HARD
                 )
 
+                // 提示系统 — 与听音玩法对齐（VM 早已支持，旧版界面无入口）
+                if (isEasy && state.hints.isNotEmpty()) {
+                    GuessHintsSection(hints = state.hints)
+                }
+
+                if (isEasy && state.lastResult != GuessResult.CORRECT && !state.showAnswer) {
+                    GuessHintButton(
+                        isLoading = state.isLoadingHint,
+                        hintCount = state.hints.size,
+                        noMoreHints = state.noMoreHints,
+                        onRequestHint = onRequestHint
+                    )
+                }
+
+                GuessErrorBanner(message = state.errorMessage)
+
                 AnimatedVisibility(
                     visible = state.lastResult == GuessResult.CORRECT,
                     enter = fadeIn() + scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
                     exit = fadeOut() + scaleOut()
                 ) {
-                    CorrectAnswerCard(
+                    GuessCorrectCard(
                         score = state.currentQuestionScore,
+                        rewardImageUrl = null,
                         onReplayVoice = onReplayVoice
                     )
                 }
@@ -279,10 +296,7 @@ private fun ModernGuessImageContent(
                     enter = fadeIn(animationSpec = tween(300)) + slideInHorizontally(animationSpec = tween(300)),
                     exit = fadeOut(animationSpec = tween(200)) + slideOutHorizontally(animationSpec = tween(200))
                 ) {
-                    AnswerCard(
-                        shipName = state.currentShip?.name ?: "",
-                        difficulty = state.difficulty
-                    )
+                    GuessAnswerCard(shipName = state.currentShip?.name ?: "")
                 }
 
                 AnimatedVisibility(
@@ -290,18 +304,18 @@ private fun ModernGuessImageContent(
                     enter = fadeIn() + scaleIn(),
                     exit = fadeOut() + scaleOut()
                 ) {
-                    WrongAnswerCard()
+                    GuessWrongCard()
                 }
 
-                ModernInputField(
+                GuessInputField(
                     value = state.inputText,
                     onValueChange = onInputChange,
                     onSubmit = onSubmit,
-                    enabled = state.lastResult != GuessResult.CORRECT && !state.showAnswer
+                    enabled = !answered
                 )
 
-                if (!state.showAnswer && state.lastResult != GuessResult.CORRECT) {
-                    ModernOutlinedButton(
+                if (!answered) {
+                    GuessActionButton(
                         text = "显示答案",
                         icon = Icons.Rounded.Visibility,
                         onClick = onShowAnswer,
@@ -311,24 +325,26 @@ private fun ModernGuessImageContent(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.Md)
                 ) {
-                    ModernOutlinedButton(
+                    GuessActionButton(
                         text = "下一题",
                         icon = Icons.Rounded.SkipNext,
                         onClick = onNext,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        primary = answered
                     )
-                    ModernPrimaryButton(
+                    GuessActionButton(
                         text = "提交答案",
                         icon = Icons.Rounded.Check,
                         onClick = onSubmit,
-                        enabled = state.lastResult != GuessResult.CORRECT && !state.showAnswer,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        primary = !answered,
+                        enabled = !answered
                     )
                 }
 
-                ModernOutlinedButton(
+                GuessActionButton(
                     text = "结算退出",
                     icon = null,
                     onClick = onShowSettlement,
@@ -342,100 +358,7 @@ private fun ModernGuessImageContent(
 }
 
 @Composable
-private fun DifficultySelector(
-    currentDifficulty: ImageDifficulty,
-    onDifficultyChange: (ImageDifficulty) -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppSpacing.Corner.Lg),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(AppSpacing.Xs),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = currentDifficulty == ImageDifficulty.EASY,
-                onClick = { onDifficultyChange(ImageDifficulty.EASY) },
-                label = { 
-                    Text(
-                        "简单模式",
-                        style = AppTypography.LabelMedium,
-                        fontWeight = if (currentDifficulty == ImageDifficulty.EASY) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Rounded.Fullscreen,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                modifier = Modifier.weight(1f)
-            )
-            FilterChip(
-                selected = currentDifficulty == ImageDifficulty.HARD,
-                onClick = { onDifficultyChange(ImageDifficulty.HARD) },
-                label = { 
-                    Text(
-                        "困难模式",
-                        style = AppTypography.LabelMedium,
-                        fontWeight = if (currentDifficulty == ImageDifficulty.HARD) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Rounded.Crop,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onTertiaryContainer
-                ),
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ScoreChip(totalScore: Int) {
-    Surface(
-        shape = RoundedCornerShape(AppSpacing.Corner.Xl),
-        color = MaterialTheme.colorScheme.primaryContainer
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = AppSpacing.Md, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Star,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp)
-            )
-            Text(
-                text = "$totalScore",
-                style = AppTypography.TitleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
-}
-
-@Composable
-private fun HintBanner(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun GuessHintBanner(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppSpacing.Corner.Md),
@@ -444,7 +367,7 @@ private fun HintBanner(text: String, icon: androidx.compose.ui.graphics.vector.I
         Row(
             modifier = Modifier.padding(AppSpacing.Md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
         ) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(16.dp))
             Text(text, style = AppTypography.BodySmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
@@ -453,35 +376,9 @@ private fun HintBanner(text: String, icon: androidx.compose.ui.graphics.vector.I
 }
 
 @Composable
-private fun ScoreBanner(score: Int) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppSpacing.Corner.Md),
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Sm),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(
-                Icons.Rounded.Star, null,
-                tint = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.size(14.dp)
-            )
-            Text(
-                "本题可得 $score 分",
-                style = AppTypography.BodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-        }
-    }
-}
-
-@Composable
 private fun ImageCard(
     imageUrl: String?,
-    cropRegion: com.azurlane.blyy.viewmodel.CropRegion?,
+    cropRegion: CropRegion?,
     difficulty: ImageDifficulty,
     isLoading: Boolean,
     showFullImage: Boolean = false
@@ -496,7 +393,7 @@ private fun ImageCard(
     // 改为揭示全图时轻微放大（1.05f），强化"揭示"的视觉反馈。
     val imageScale by animateFloatAsState(
         targetValue = if (showFullImage && cropRegion != null) 1.05f else 1f,
-        animationSpec = tween(durationMillis = 300, easing = AppAnimation.Easings.Standard),
+        animationSpec = tween(durationMillis = 300),
         label = "imageScale"
     )
 
@@ -552,7 +449,7 @@ private fun ImageCard(
         } else {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.Md)
             ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(32.dp),
@@ -560,7 +457,7 @@ private fun ImageCard(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    "正在加载题目...请点击“下一题”重试",
+                    "正在加载题目…",
                     style = AppTypography.BodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -572,7 +469,7 @@ private fun ImageCard(
 @Composable
 private fun CroppedImage(
     imageUrl: String,
-    cropRegion: com.azurlane.blyy.viewmodel.CropRegion,
+    cropRegion: CropRegion,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
@@ -595,417 +492,5 @@ private fun CroppedImage(
                 },
             contentScale = ContentScale.Fit
         )
-    }
-}
-
-@Composable
-private fun CorrectAnswerCard(score: Int, onReplayVoice: () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppSpacing.Corner.Xl),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-        shadowElevation = 6.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(AppSpacing.Xl),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    AppColors.Favorite.Gold.copy(alpha = 0.3f),
-                                    Color.Transparent
-                                )
-                            ),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Rounded.EmojiEvents,
-                        contentDescription = null,
-                        tint = AppColors.Favorite.Gold,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        "回答正确！",
-                        style = AppTypography.TitleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        "+$score 分",
-                        style = AppTypography.HeadlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            OutlinedButton(
-                onClick = onReplayVoice,
-                shape = RoundedCornerShape(AppSpacing.Corner.Xs2),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(Icons.Rounded.Refresh, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("播放语音", style = AppTypography.LabelMedium)
-            }
-        }
-    }
-}
-
-@Composable
-private fun AnswerCard(
-    shipName: String, 
-    difficulty: ImageDifficulty = ImageDifficulty.EASY
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppSpacing.Corner.Xl),
-        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
-    ) {
-        Row(
-            modifier = Modifier.padding(AppSpacing.Lg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
-                                Color.Transparent
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Rounded.Lightbulb,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Column {
-                Text(
-                    "答案：$shipName",
-                    style = AppTypography.TitleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                        "本题不得分",
-                        style = AppTypography.BodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun WrongAnswerCard() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppSpacing.Corner.Lg),
-        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
-    ) {
-        Row(
-            modifier = Modifier.padding(AppSpacing.Lg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(
-                        MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
-                        CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "×",
-                    style = AppTypography.TitleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-            Text(
-                "好像不太对，再想想？",
-                style = AppTypography.BodyMedium,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-    }
-}
-
-@Composable
-private fun ModernInputField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    enabled: Boolean
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(AppSpacing.Game.Input.Height)
-            .shadow(6.dp, RoundedCornerShape(AppSpacing.Game.Input.CornerSize)),
-        placeholder = {
-            Text(
-                "输入舰娘名字...",
-                style = AppTypography.BodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-            )
-        },
-        singleLine = true,
-        shape = RoundedCornerShape(AppSpacing.Game.Input.CornerSize),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-            focusedContainerColor = MaterialTheme.colorScheme.surface,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-            cursorColor = MaterialTheme.colorScheme.primary
-        ),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Text),
-        keyboardActions = KeyboardActions(onDone = { onSubmit() }),
-        enabled = enabled,
-        interactionSource = interactionSource,
-        textStyle = AppTypography.BodyMedium.copy(fontWeight = FontWeight.Medium)
-    )
-}
-
-@Composable
-private fun ModernPrimaryButton(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector?,
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (enabled) 1f else 0.98f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "buttonScale"
-    )
-
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .height(AppSpacing.Game.Button.Height)
-            .scale(scale),
-        enabled = enabled,
-        shape = RoundedCornerShape(AppSpacing.Game.Button.CornerSize),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 4.dp,
-            pressedElevation = 2.dp
-        )
-    ) {
-        icon?.let {
-            Icon(it, contentDescription = null, modifier = Modifier.size(AppSpacing.Game.Button.IconSize))
-            Spacer(Modifier.width(6.dp))
-        }
-        Text(text, style = AppTypography.LabelLarge)
-    }
-}
-
-@Composable
-private fun ModernOutlinedButton(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(AppSpacing.Game.Button.Height),
-        shape = RoundedCornerShape(AppSpacing.Game.Button.CornerSize),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.primary
-        )
-    ) {
-        icon?.let {
-            Icon(it, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-        }
-        Text(text, style = AppTypography.LabelLarge)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ModernSettlementDialog(
-    score: GameScore,
-    onDismiss: () -> Unit,
-    onExit: () -> Unit,
-    onContinue: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(AppSpacing.Corner.Dialog),
-        containerColor = MaterialTheme.colorScheme.surface,
-        icon = {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                AppColors.Favorite.Gold.copy(alpha = 0.3f),
-                                Color.Transparent
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Rounded.EmojiEvents,
-                    contentDescription = null,
-                    tint = AppColors.Favorite.Gold,
-                    modifier = Modifier.size(36.dp)
-                )
-            }
-        },
-        title = {
-            Text(
-                "游戏结算",
-                style = AppTypography.HeadlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(AppSpacing.Corner.Xl),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Column(
-                        modifier = Modifier.padding(AppSpacing.Xxl),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            "总得分",
-                            style = AppTypography.LabelLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "${score.totalScore}",
-                            style = AppTypography.DisplayMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        if (score.totalPossibleScore > 0) {
-                            Text(
-                                "满分 ${score.totalPossibleScore} 分",
-                                style = AppTypography.BodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    StatItemContent("答对", "${score.correctAnswers}/${score.totalQuestions}", "${(score.accuracy * 100).toInt()}%")
-                    StatItemContent("跳过", "${score.skippedQuestions}", "-")
-                    StatItemContent("提示", "${score.hintsUsedTotal}", "-")
-                }
-
-                if (score.totalQuestions > 0) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppSpacing.Corner.Md),
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(AppSpacing.Md),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("平均得分", style = AppTypography.LabelMedium)
-                            Text(
-                                String.format("%.1f", score.averageScore),
-                                style = AppTypography.TitleSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onContinue,
-                shape = RoundedCornerShape(AppSpacing.Corner.Xs2),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("继续游戏", style = AppTypography.LabelLarge)
-            }
-        },
-        dismissButton = {
-            OutlinedButton(
-                onClick = onExit,
-                shape = RoundedCornerShape(AppSpacing.Corner.Xs2)
-            ) {
-                Text("退出", style = AppTypography.LabelLarge)
-            }
-        }
-    )
-}
-
-@Composable
-private fun StatItemContent(label: String, value: String, subValue: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppSpacing.Corner.Xs2),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(AppSpacing.Md)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(label, style = AppTypography.LabelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(4.dp))
-            Text(value, style = AppTypography.TitleMedium, fontWeight = FontWeight.Bold)
-            Text(subValue, style = AppTypography.LabelSmall, color = MaterialTheme.colorScheme.primary)
-        }
     }
 }

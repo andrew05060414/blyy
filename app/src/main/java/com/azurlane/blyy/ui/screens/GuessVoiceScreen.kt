@@ -1,9 +1,11 @@
 package com.azurlane.blyy.ui.screens
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -13,57 +15,36 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -72,35 +53,40 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import androidx.media3.common.util.UnstableApi
 import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyConfirmDialog
 import com.azurlane.blyy.ui.components.BlyyHaptic
-import com.azurlane.blyy.ui.components.rememberBlyyHaptics
+import com.azurlane.blyy.ui.components.BlyyPanel
+import com.azurlane.blyy.ui.components.BlyyPrimaryButton
 import com.azurlane.blyy.ui.components.BlyyTopBar
-import com.azurlane.blyy.ui.theme.AppColors
+import com.azurlane.blyy.ui.components.rememberBlyyHaptics
+import com.azurlane.blyy.ui.screens.guess.GuessActionButton
+import com.azurlane.blyy.ui.screens.guess.GuessAnswerCard
+import com.azurlane.blyy.ui.screens.guess.GuessCorrectCard
+import com.azurlane.blyy.ui.screens.guess.GuessDifficultyOption
+import com.azurlane.blyy.ui.screens.guess.GuessDifficultySelector
+import com.azurlane.blyy.ui.screens.guess.GuessErrorBanner
+import com.azurlane.blyy.ui.screens.guess.GuessHintButton
+import com.azurlane.blyy.ui.screens.guess.GuessHintsSection
+import com.azurlane.blyy.ui.screens.guess.GuessInputField
+import com.azurlane.blyy.ui.screens.guess.GuessScoreBanner
+import com.azurlane.blyy.ui.screens.guess.GuessScoreChip
+import com.azurlane.blyy.ui.screens.guess.GuessSettlementDialog
+import com.azurlane.blyy.ui.screens.guess.GuessWrongCard
+import com.azurlane.blyy.ui.theme.AppAnimation
 import com.azurlane.blyy.ui.theme.AppSpacing
 import com.azurlane.blyy.ui.theme.AppTypography
-import com.azurlane.blyy.ui.theme.LocalIsDark
-import androidx.media3.common.util.UnstableApi
 import com.azurlane.blyy.viewmodel.GuessGameUiState
 import com.azurlane.blyy.viewmodel.GuessResult
 import com.azurlane.blyy.viewmodel.GuessShipViewModel
 import com.azurlane.blyy.viewmodel.PlayerViewModel
-import com.azurlane.blyy.viewmodel.GameScore
 import com.azurlane.blyy.viewmodel.VoiceDifficulty
 
 @UnstableApi
@@ -112,39 +98,22 @@ fun GuessByVoiceScreen(
     playerViewModel: PlayerViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    
-    var currentToast: Toast? by remember { mutableStateOf(null) }
+    val playerState by playerViewModel.uiState.collectAsStateWithLifecycle()
+
     var lastDialogueId by remember { mutableStateOf(0L) }
 
     LaunchedEffect(Unit) {
         viewModel.startVoiceGame()
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            currentToast?.cancel()
-        }
-    }
-
     val questionVoiceUrl = state.currentVoice?.audioUrl
     val currentDialogueId = state.currentDialogueId
-    
+
+    // 新题目自动播放一次（旧版在此处还会用 Toast 弹台词，现改为播放卡片内常驻展示）
     LaunchedEffect(questionVoiceUrl, currentDialogueId) {
         if (!questionVoiceUrl.isNullOrEmpty() && currentDialogueId != lastDialogueId) {
-            currentToast?.cancel()
-            
             playerViewModel.playSingleVoice(questionVoiceUrl)
-            
-            if (state.voiceDifficulty == VoiceDifficulty.EASY) {
-                val dialogue = state.currentVoice?.dialogue
-                if (!dialogue.isNullOrBlank()) {
-                    val toast = Toast.makeText(context, dialogue, Toast.LENGTH_LONG)
-                    currentToast = toast
-                    toast.show()
-                    lastDialogueId = currentDialogueId
-                }
-            }
+            lastDialogueId = currentDialogueId
         }
     }
 
@@ -162,7 +131,7 @@ fun GuessByVoiceScreen(
     }
 
     if (state.showSettlement) {
-        ModernVoiceSettlementDialog(
+        GuessSettlementDialog(
             score = state.score,
             onDismiss = { viewModel.hideSettlement() },
             onExit = {
@@ -193,33 +162,27 @@ fun GuessByVoiceScreen(
 
     ModernGuessVoiceContent(
         state = state,
+        isVoicePlaying = playerState.isPlaying,
         onBack = {
             viewModel.showSettlement()
         },
         onHistory = onHistory,
         onInputChange = viewModel::onInputChanged,
         onSubmit = {
-            haptic(BlyyHaptic.Confirm)
+            // 空输入提交只会设置 errorMessage（不产生作答结果），不应给确认触觉
+            if (state.inputText.isNotBlank()) {
+                haptic(BlyyHaptic.Confirm)
+            }
             viewModel.checkAnswer()
         },
         onNext = {
             haptic(BlyyHaptic.Tick)
-            currentToast?.cancel()
-            currentToast = null
             // 统一调用 ViewModel 的 goToNextQuestion，由 VM 内部读取最新状态计数
             viewModel.goToNextQuestion()
         },
         onReplay = {
-            viewModel.playRandomVoiceForCurrentShip { url, dialogue ->
-                currentToast?.cancel()
-                
+            viewModel.playRandomVoiceForCurrentShip { url, _ ->
                 playerViewModel.playSingleVoice(url)
-                
-                if (state.voiceDifficulty == VoiceDifficulty.EASY) {
-                    val toast = Toast.makeText(context, dialogue, Toast.LENGTH_LONG)
-                    currentToast = toast
-                    toast.show()
-                }
             }
         },
         onRequestHint = viewModel::requestHint,
@@ -229,10 +192,10 @@ fun GuessByVoiceScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ModernGuessVoiceContent(
     state: GuessGameUiState,
+    isVoicePlaying: Boolean,
     onBack: () -> Unit,
     onHistory: () -> Unit,
     onInputChange: (String) -> Unit,
@@ -245,7 +208,9 @@ private fun ModernGuessVoiceContent(
     onDifficultyChange: (VoiceDifficulty) -> Unit
 ) {
     val scrollState = rememberScrollState()
-    val isDark = LocalIsDark.current
+    val isEasy = state.voiceDifficulty == VoiceDifficulty.EASY
+    // 答对/已揭示答案后，主操作切换为"下一题"（主次按钮互换引导下一步）
+    val answered = state.lastResult == GuessResult.CORRECT || state.showAnswer
 
     AdaptiveScreenBackground {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -258,10 +223,10 @@ private fun ModernGuessVoiceContent(
                         Icon(
                             Icons.Rounded.History,
                             contentDescription = "历史记录",
-                            tint = MaterialTheme.colorScheme.onSurface
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                    VoiceScoreChip(totalScore = state.score.totalScore)
+                    GuessScoreChip(totalScore = state.score.totalScore)
                 }
             )
 
@@ -273,25 +238,40 @@ private fun ModernGuessVoiceContent(
                 verticalArrangement = Arrangement.spacedBy(AppSpacing.Md),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                VoiceDifficultySelector(
-                    currentDifficulty = state.voiceDifficulty,
-                    onDifficultyChange = onDifficultyChange
+                GuessDifficultySelector(
+                    current = state.voiceDifficulty,
+                    options = listOf(
+                        GuessDifficultyOption(
+                            value = VoiceDifficulty.EASY,
+                            title = "简单模式",
+                            description = "显示台词和提示",
+                            icon = Icons.Rounded.RecordVoiceOver
+                        ),
+                        GuessDifficultyOption(
+                            value = VoiceDifficulty.HARD,
+                            title = "困难模式",
+                            description = "不显示台词和提示",
+                            icon = Icons.Rounded.VisibilityOff
+                        )
+                    ),
+                    onSelect = onDifficultyChange
                 )
 
                 VoicePlayerCard(
-                    isPlaying = state.isLoadingHint,
+                    isPlaying = isVoicePlaying,
                     onReplay = onReplay,
-                    hasVoice = state.currentVoice != null
+                    hasVoice = state.currentVoice != null,
+                    dialogue = if (isEasy) state.currentVoice?.dialogue else null
                 )
 
-                VoiceScoreBanner(score = state.currentQuestionScore)
+                GuessScoreBanner(score = state.currentQuestionScore)
 
-                if (state.hints.isNotEmpty()) {
-                    HintsSection(hints = state.hints.map { it.label to it.value })
+                if (isEasy && state.hints.isNotEmpty()) {
+                    GuessHintsSection(hints = state.hints)
                 }
 
-                if (state.lastResult != GuessResult.CORRECT && !state.showAnswer && state.voiceDifficulty == VoiceDifficulty.EASY) {
-                    HintButton(
+                if (isEasy && state.lastResult != GuessResult.CORRECT && !state.showAnswer) {
+                    GuessHintButton(
                         isLoading = state.isLoadingHint,
                         hintCount = state.hints.size,
                         noMoreHints = state.noMoreHints,
@@ -299,12 +279,14 @@ private fun ModernGuessVoiceContent(
                     )
                 }
 
+                GuessErrorBanner(message = state.errorMessage)
+
                 AnimatedVisibility(
                     visible = state.lastResult == GuessResult.CORRECT,
                     enter = fadeIn() + scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
                     exit = fadeOut() + scaleOut()
                 ) {
-                    VoiceCorrectCard(
+                    GuessCorrectCard(
                         score = state.currentQuestionScore,
                         rewardImageUrl = state.rewardImageUrl
                     )
@@ -315,7 +297,7 @@ private fun ModernGuessVoiceContent(
                     enter = fadeIn() + slideInHorizontally(),
                     exit = fadeOut() + slideOutHorizontally()
                 ) {
-                    VoiceAnswerCard(
+                    GuessAnswerCard(
                         shipName = state.currentShip?.name ?: "",
                         rewardImageUrl = state.rewardImageUrl
                     )
@@ -326,18 +308,18 @@ private fun ModernGuessVoiceContent(
                     enter = fadeIn() + scaleIn(),
                     exit = fadeOut() + scaleOut()
                 ) {
-                    VoiceWrongCard()
+                    GuessWrongCard()
                 }
 
-                VoiceInputField(
+                GuessInputField(
                     value = state.inputText,
                     onValueChange = onInputChange,
                     onSubmit = onSubmit,
-                    enabled = state.lastResult != GuessResult.CORRECT && !state.showAnswer
+                    enabled = !answered
                 )
 
-                if (!state.showAnswer && state.lastResult != GuessResult.CORRECT) {
-                    ModernVoiceOutlinedButton(
+                if (!answered) {
+                    GuessActionButton(
                         text = "显示答案",
                         icon = Icons.Rounded.Visibility,
                         onClick = onShowAnswer,
@@ -347,24 +329,26 @@ private fun ModernGuessVoiceContent(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.Md)
                 ) {
-                    ModernVoiceOutlinedButton(
+                    GuessActionButton(
                         text = "下一题",
                         icon = Icons.Rounded.SkipNext,
                         onClick = onNext,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        primary = answered
                     )
-                    ModernVoicePrimaryButton(
+                    GuessActionButton(
                         text = "提交答案",
                         icon = Icons.Rounded.Check,
                         onClick = onSubmit,
-                        enabled = state.lastResult != GuessResult.CORRECT && !state.showAnswer,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        primary = !answered,
+                        enabled = !answered
                     )
                 }
 
-                ModernVoiceOutlinedButton(
+                GuessActionButton(
                     text = "结算退出",
                     icon = null,
                     onClick = onShowSettlement,
@@ -377,131 +361,21 @@ private fun ModernGuessVoiceContent(
     }
 }
 
-@Composable
-private fun VoiceDifficultySelector(
-    currentDifficulty: VoiceDifficulty,
-    onDifficultyChange: (VoiceDifficulty) -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppSpacing.Corner.Lg),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-    ) {
-        Column(
-            modifier = Modifier.padding(AppSpacing.Lg),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                VoiceDifficultyChip(
-                    text = "简单模式",
-                    description = "显示台词和提示",
-                    isSelected = currentDifficulty == VoiceDifficulty.EASY,
-                    onClick = { onDifficultyChange(VoiceDifficulty.EASY) },
-                    modifier = Modifier.weight(1f)
-                )
-                VoiceDifficultyChip(
-                    text = "困难模式",
-                    description = "不显示台词和提示",
-                    isSelected = currentDifficulty == VoiceDifficulty.HARD,
-                    onClick = { onDifficultyChange(VoiceDifficulty.HARD) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun VoiceDifficultyChip(
-    text: String,
-    description: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.02f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "chipScale"
-    )
-
-    Surface(
-        onClick = onClick,
-        modifier = modifier.scale(scale),
-        shape = RoundedCornerShape(AppSpacing.Corner.Md),
-        color = if (isSelected) {
-            MaterialTheme.colorScheme.secondaryContainer
-        } else {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-        },
-        border = if (isSelected) {
-            BorderStroke(
-                width = 2.dp,
-                color = MaterialTheme.colorScheme.secondary
-            )
-        } else null
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(AppSpacing.Md),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = text,
-                style = AppTypography.LabelLarge,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-            )
-            Text(
-                text = description,
-                style = AppTypography.LabelSmall,
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun VoiceScoreChip(totalScore: Int) {
-    Surface(
-        shape = RoundedCornerShape(AppSpacing.Corner.Xl),
-        color = MaterialTheme.colorScheme.secondaryContainer
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = AppSpacing.Md, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(Icons.Rounded.Star, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
-            Text(
-                "$totalScore",
-                style = AppTypography.TitleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.secondary
-            )
-        }
-    }
-}
-
+/**
+ * 播放卡片 — BlyyPanel 容器 + BlyyPrimaryButton 播放键 + 台词面板
+ *
+ * 要点：
+ * - [isPlaying] 绑定 PlayerViewModel 的真实播放状态（旧版误绑 isLoadingHint，
+ *   导致"播放中…"跟随提示加载而非播放）
+ * - EASY 模式台词在卡内常驻展示（旧版用 Toast，转瞬即逝且每次回放重复弹出）
+ * - 播放中耳机图标以呼吸光晕反馈，静止时不跑动画
+ */
 @Composable
 private fun VoicePlayerCard(
     isPlaying: Boolean,
     onReplay: () -> Unit,
-    hasVoice: Boolean
+    hasVoice: Boolean,
+    dialogue: String?
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isPlaying) 1.02f else 1f,
@@ -509,28 +383,36 @@ private fun VoicePlayerCard(
         label = "scale"
     )
 
-    val pulseAlpha by animateFloatAsState(
-        targetValue = if (isPlaying) 0.6f else 0.3f,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "pulseAlpha"
-    )
+    // 播放中：呼吸光晕；静止：固定微光（不启动无限动画，避免空耗帧）
+    val breathingAlpha = if (isPlaying) {
+        val infiniteTransition = rememberInfiniteTransition(label = "voicePulse")
+        val pulse by infiniteTransition.animateFloat(
+            initialValue = 0.25f,
+            targetValue = 0.55f,
+            animationSpec = infiniteRepeatable(tween(1500, easing = AppAnimation.Easings.EaseInOutSine)),
+            label = "pulseAlpha"
+        )
+        pulse
+    } else {
+        0.25f
+    }
 
-    Surface(
+    BlyyPanel(
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale),
-        shape = RoundedCornerShape(AppSpacing.Corner.Xxl),
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
-        shadowElevation = 8.dp
+        accentColor = MaterialTheme.colorScheme.primary
     ) {
         Column(
-            modifier = Modifier.padding(AppSpacing.Xxl),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(AppSpacing.Xl),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.Lg)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(AppSpacing.Md)
             ) {
                 Box(
                     modifier = Modifier
@@ -538,7 +420,7 @@ private fun VoicePlayerCard(
                         .background(
                             brush = Brush.radialGradient(
                                 colors = listOf(
-                                    MaterialTheme.colorScheme.secondary.copy(alpha = pulseAlpha),
+                                    MaterialTheme.colorScheme.primary.copy(alpha = breathingAlpha),
                                     Color.Transparent
                                 )
                             ),
@@ -549,580 +431,75 @@ private fun VoicePlayerCard(
                     Icon(
                         Icons.Rounded.Headphones,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )
                 }
                 Column {
                     Text(
-                        "播放语音,点击“下一题”加载",
+                        if (hasVoice) "聆听这段语音" else "正在准备题目",
                         style = AppTypography.TitleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "根据语音猜出舰娘名字",
+                        if (hasVoice) "可随时点击下方按钮反复回放" else "语音加载完成后即可播放",
                         style = AppTypography.BodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
                 }
             }
 
-            Button(
+            BlyyPrimaryButton(
+                text = when {
+                    isPlaying -> "播放中…"
+                    hasVoice -> "播放语音"
+                    else -> "等待题目加载"
+                },
+                icon = if (isPlaying) Icons.Rounded.MusicNote else Icons.Rounded.PlayArrow,
                 onClick = onReplay,
                 enabled = hasVoice,
-                shape = RoundedCornerShape(AppSpacing.Game.Button.CornerSize),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(AppSpacing.Game.Button.Height),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                elevation = ButtonDefaults.buttonElevation(
-                    defaultElevation = 4.dp,
-                    pressedElevation = 2.dp
-                )
-            ) {
-                if (isPlaying) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onSecondary
-                    )
-                } else {
-                    Icon(Icons.Rounded.PlayArrow, null, modifier = Modifier.size(22.dp))
-                }
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    if (isPlaying) "播放中..." else "播放语音",
-                    style = AppTypography.LabelLarge
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun VoiceScoreBanner(score: Int) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppSpacing.Corner.Md),
-        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Sm),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(Icons.Rounded.Star, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(14.dp))
-            Text("本题可得 $score 分", style = AppTypography.BodySmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
-        }
-    }
-}
-
-@Composable
-private fun HintsSection(hints: List<Pair<String, String>>) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        hints.forEachIndexed { index, (label, value) ->
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(AppSpacing.Corner.Lg),
-                color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.25f)
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Rounded.Lightbulb,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                        Text(
-                            "提示 #${index + 1}",
-                            style = AppTypography.LabelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        label,
-                        style = AppTypography.LabelMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        value,
-                        style = AppTypography.BodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun HintButton(
-    isLoading: Boolean,
-    hintCount: Int,
-    noMoreHints: Boolean,
-    onRequestHint: () -> Unit
-) {
-    OutlinedButton(
-        onClick = onRequestHint,
-        enabled = !isLoading && !noMoreHints,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(AppSpacing.Game.Button.Height),
-        shape = RoundedCornerShape(AppSpacing.Game.Button.CornerSize),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.tertiary
-        )
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(18.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.tertiary
+                    .height(AppSpacing.Game.Button.Height)
             )
-        } else {
-            Icon(Icons.Rounded.Lightbulb, null, modifier = Modifier.size(18.dp))
-        }
-        Spacer(Modifier.width(8.dp))
-        Text(
-            when {
-                noMoreHints -> "已无更多提示"
-                hintCount == 0 -> "获取提示"
-                else -> "再获取提示"
-            },
-            style = AppTypography.LabelLarge
-        )
-    }
-}
 
-@Composable
-private fun VoiceCorrectCard(score: Int, rewardImageUrl: String?) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(AppSpacing.Corner.Xl),
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-            shadowElevation = 6.dp
-        ) {
-            Row(
-                modifier = Modifier.padding(AppSpacing.Xl),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    AppColors.Favorite.Gold.copy(alpha = 0.3f),
-                                    Color.Transparent
-                                )
-                            ),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Rounded.EmojiEvents,
-                        contentDescription = null,
-                        tint = AppColors.Favorite.Gold,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        "回答正确！",
-                        style = AppTypography.TitleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        "+$score 分",
-                        style = AppTypography.HeadlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
-        if (rewardImageUrl != null) {
-            AsyncImage(
-                model = rewardImageUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(3f / 4f)
-                    .clip(RoundedCornerShape(AppSpacing.Corner.Xl))
-                    .shadow(12.dp, RoundedCornerShape(AppSpacing.Corner.Xl)),
-                contentScale = ContentScale.Fit
-            )
-        }
-    }
-}
-
-@Composable
-private fun VoiceAnswerCard(shipName: String, rewardImageUrl: String?) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(AppSpacing.Corner.Xl),
-            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
-        ) {
-            Row(
-                modifier = Modifier.padding(AppSpacing.Lg),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
-                                    Color.Transparent
-                                )
-                            ),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Rounded.Lightbulb,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        "答案：$shipName",
-                        style = AppTypography.TitleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "本题不得分",
-                        style = AppTypography.BodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
-                    )
-                }
-            }
-        }
-        if (rewardImageUrl != null) {
-            AsyncImage(
-                model = rewardImageUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(3f / 4f)
-                    .clip(RoundedCornerShape(AppSpacing.Corner.Xl))
-                    .shadow(12.dp, RoundedCornerShape(AppSpacing.Corner.Xl)),
-                contentScale = ContentScale.Fit
-            )
-        }
-    }
-}
-
-@Composable
-private fun VoiceWrongCard() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppSpacing.Corner.Lg),
-        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
-    ) {
-        Row(
-            modifier = Modifier.padding(AppSpacing.Lg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(
-                        MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
-                        CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "×",
-                    style = AppTypography.TitleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-            Text(
-                "好像不太对，再想想？",
-                style = AppTypography.BodyMedium,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-    }
-}
-
-@Composable
-private fun VoiceInputField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    enabled: Boolean
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(AppSpacing.Game.Input.Height)
-            .shadow(6.dp, RoundedCornerShape(AppSpacing.Game.Input.CornerSize)),
-        placeholder = {
-            Text(
-                "输入舰娘名字...",
-                style = AppTypography.BodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-            )
-        },
-        singleLine = true,
-        shape = RoundedCornerShape(AppSpacing.Game.Input.CornerSize),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.secondary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-            focusedContainerColor = MaterialTheme.colorScheme.surface,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-            cursorColor = MaterialTheme.colorScheme.secondary
-        ),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Text),
-        keyboardActions = KeyboardActions(onDone = { onSubmit() }),
-        enabled = enabled,
-        textStyle = AppTypography.BodyMedium.copy(fontWeight = FontWeight.Medium)
-    )
-}
-
-@Composable
-private fun ModernVoicePrimaryButton(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector?,
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (enabled) 1f else 0.98f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "buttonScale"
-    )
-
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .height(AppSpacing.Game.Button.Height)
-            .scale(scale),
-        enabled = enabled,
-        shape = RoundedCornerShape(AppSpacing.Game.Button.CornerSize),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondary,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 4.dp,
-            pressedElevation = 2.dp
-        )
-    ) {
-        icon?.let {
-            Icon(it, contentDescription = null, modifier = Modifier.size(AppSpacing.Game.Button.IconSize))
-            Spacer(Modifier.width(6.dp))
-        }
-        Text(text, style = AppTypography.LabelLarge)
-    }
-}
-
-@Composable
-private fun ModernVoiceOutlinedButton(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(AppSpacing.Game.Button.Height),
-        shape = RoundedCornerShape(AppSpacing.Corner.Lg),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.secondary
-        )
-    ) {
-        icon?.let {
-            Icon(it, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-        }
-        Text(text, style = AppTypography.LabelLarge)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ModernVoiceSettlementDialog(
-    score: GameScore,
-    onDismiss: () -> Unit,
-    onExit: () -> Unit,
-    onContinue: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(AppSpacing.Corner.Dialog),
-        containerColor = MaterialTheme.colorScheme.surface,
-        icon = {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                AppColors.Favorite.Gold.copy(alpha = 0.3f),
-                                Color.Transparent
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Rounded.EmojiEvents,
-                    contentDescription = null,
-                    tint = AppColors.Favorite.Gold,
-                    modifier = Modifier.size(36.dp)
-                )
-            }
-        },
-        title = {
-            Text(
-                "游戏结算",
-                style = AppTypography.HeadlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            if (!dialogue.isNullOrBlank()) {
                 Surface(
-                    shape = RoundedCornerShape(AppSpacing.Corner.Xl),
-                    color = MaterialTheme.colorScheme.secondaryContainer
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppSpacing.Corner.Md),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                 ) {
                     Column(
-                        modifier = Modifier.padding(AppSpacing.Xxl),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            "总得分",
-                            style = AppTypography.LabelLarge,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "${score.totalScore}",
-                            style = AppTypography.DisplayMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                        if (score.totalPossibleScore > 0) {
-                            Text(
-                                "满分 ${score.totalPossibleScore} 分",
-                                style = AppTypography.BodySmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    VoiceStatItemContent("答对", "${score.correctAnswers}/${score.totalQuestions}", "${(score.accuracy * 100).toInt()}%")
-                    VoiceStatItemContent("跳过", "${score.skippedQuestions}", "-")
-                    VoiceStatItemContent("提示", "${score.hintsUsedTotal}", "-")
-                }
-
-                if (score.totalQuestions > 0) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppSpacing.Corner.Md),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(AppSpacing.Md),
+                        verticalArrangement = Arrangement.spacedBy(AppSpacing.Xs)
                     ) {
                         Row(
-                            modifier = Modifier.padding(AppSpacing.Md),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(AppSpacing.Xs)
                         ) {
-                            Text("平均得分", style = AppTypography.LabelMedium)
+                            Icon(
+                                Icons.Rounded.RecordVoiceOver,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
                             Text(
-                                String.format("%.1f", score.averageScore),
-                                style = AppTypography.TitleSmall,
-                                fontWeight = FontWeight.Bold
+                                "台词",
+                                style = AppTypography.LabelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
+                        Text(
+                            dialogue,
+                            style = AppTypography.BodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+                        )
                     }
                 }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = onContinue,
-                shape = RoundedCornerShape(AppSpacing.Corner.Xs2),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                )
-            ) {
-                Text("继续游戏", style = AppTypography.LabelLarge)
-            }
-        },
-        dismissButton = {
-            OutlinedButton(
-                onClick = onExit,
-                shape = RoundedCornerShape(AppSpacing.Corner.Xs2)
-            ) {
-                Text("退出", style = AppTypography.LabelLarge)
-            }
-        }
-    )
-}
-
-@Composable
-private fun VoiceStatItemContent(label: String, value: String, subValue: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppSpacing.Corner.Xs2),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(AppSpacing.Md)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(label, style = AppTypography.LabelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(4.dp))
-            Text(value, style = AppTypography.TitleMedium, fontWeight = FontWeight.Bold)
-            Text(subValue, style = AppTypography.LabelSmall, color = MaterialTheme.colorScheme.secondary)
         }
     }
 }
