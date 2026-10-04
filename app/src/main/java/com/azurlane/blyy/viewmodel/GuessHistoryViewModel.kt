@@ -170,17 +170,37 @@ class GuessHistoryViewModel @Inject constructor(
         )
     }
 
+    // uiState 必须把 filter/selectedIds/isMultiSelectMode/detailRecord 全部纳入 combine 上游：
+    // 若在 transform 内用 .value 快照读取，这些流的变化不会触发 uiState 重发射，
+    // 多选勾选/详情弹窗的刷新将依赖 Room 恰好发射的巧合（B1 修复）。
+    // uiState 必须把 filter/selectedIds/isMultiSelectMode/detailRecord 全部纳入 combine 上游：
+    // 若在 transform 内用 .value 快照读取，这些流的变化不会触发 uiState 重发射，
+    // 多选勾选/详情弹窗的刷新将依赖 Room 恰好发射的巧合（B1 修复）。
+    // 本项目 kotlinx.coroutines 的扩展 combine 仅支持 2 流，3 流以上用顶层 combine，
+    // 故采用与 _stats 链相同的级联写法（3-flow 顶层 + 2-flow 扩展）。
+    private val baseInputs = combine(_stats, _records, _filter) { stats, records, filter ->
+        Triple(stats, records, filter)
+    }
+
+    private val inputs2 = baseInputs.combine(_selectedIds) { base, selectedIds ->
+        Quad(base.first, base.second, base.third, selectedIds)
+    }
+
+    private val inputs3 = inputs2.combine(_isMultiSelectMode) { inputs, isMultiSelect ->
+        Quint(inputs.first, inputs.second, inputs.third, inputs.fourth, isMultiSelect)
+    }
+
     val uiState: StateFlow<GuessHistoryUiState> =
-        combine(_stats, _records) { stats, records ->
+        inputs3.combine(_detailRecord) { inputs, detail ->
             GuessHistoryUiState(
                 isLoading = false,
-                records = records,
-                filter = _filter.value,
-                selectedIds = _selectedIds.value,
-                isMultiSelectMode = _isMultiSelectMode.value,
-                detailRecord = _detailRecord.value,
-                isEmpty = records.isEmpty(),
-                stats = stats
+                records = inputs.second,
+                filter = inputs.third,
+                selectedIds = inputs.fourth,
+                isMultiSelectMode = inputs.fifth,
+                detailRecord = detail,
+                isEmpty = inputs.second.isEmpty(),
+                stats = inputs.first
             )
         }.stateIn(
             scope = viewModelScope,
