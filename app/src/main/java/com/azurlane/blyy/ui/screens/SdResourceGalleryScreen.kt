@@ -51,6 +51,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,6 +77,7 @@ import com.azurlane.blyy.util.SDResourceManager
 import com.azurlane.blyy.util.SDResource
 import com.azurlane.blyy.util.SDResourceSource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -102,7 +104,12 @@ fun SdResourceGalleryScreen(
     var searchQuery by remember { mutableStateOf("") }
     var refreshTrigger by remember { mutableStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
+    // 扫描/删除/重命名失败信息：非空且列表为空时展示错误态（B3 修复：不再吞错伪装成空态）
+    var loadError by remember { mutableStateOf<String?>(null) }
     var resources by remember { mutableStateOf<List<SDResource>>(emptyList()) }
+    val scope = rememberCoroutineScope()
+    // 删除/重命名等 IO 操作进行中，期间禁用确认按钮防止连点
+    var isBusy by remember { mutableStateOf(false) }
 
     // 预览对话框
     var previewResource by remember { mutableStateOf<SDResource?>(null) }
@@ -117,12 +124,19 @@ fun SdResourceGalleryScreen(
     // ── 资源加载：监听 revision 变化自动刷新 ──
     LaunchedEffect(refreshTrigger, SDResourceManager.revision.value) {
         isLoading = true
-        // 在 IO 线程执行目录扫描，避免主线程卡顿
-        val list = withContext(Dispatchers.IO) {
+        // 在 IO 线程执行目录扫描，避免主线程卡顿；失败保留错误信息供错误态展示
+        val result = withContext(Dispatchers.IO) {
             runCatching { SDResourceManager.listAll(context) }
-                .getOrElse { emptyList() }
         }
-        resources = list
+        result.fold(
+            onSuccess = {
+                loadError = null
+                resources = it
+            },
+            onFailure = { e ->
+                loadError = e.message ?: "扫描 SD 资源失败"
+            }
+        )
         isLoading = false
     }
 
@@ -204,6 +218,12 @@ fun SdResourceGalleryScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
                     isLoading -> SdLoadingState()
+                    // 加载失败且无已有数据 → 错误态（提供重试）；有旧数据则继续展示内容
+                    loadError != null && resources.isEmpty() ->
+                        SdErrorState(
+                            message = loadError.orEmpty(),
+                            onRetry = { refreshTrigger++ }
+                        )
                     filteredResources.isEmpty() && resources.isEmpty() -> SdEmptyState()
                     filteredResources.isEmpty() -> SdSearchEmptyState(query = searchQuery)
                     else -> LazyVerticalGrid(
@@ -267,18 +287,26 @@ fun SdResourceGalleryScreen(
             },
             confirmButton = {
                 TextButton(
+                    enabled = !isBusy,
                     onClick = {
-                        val success = SDResourceManager.deleteResource(context, target.id)
-                        if (success) {
-                            refreshTrigger++
-                            Toast.makeText(context, "已删除", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "删除失败", Toast.LENGTH_SHORT).show()
+                        isBusy = true
+                        scope.launch {
+                            // 目录删除是磁盘 IO，必须在 IO 线程执行（B3 修复：原实现在主线程直调）
+                            val success = withContext(Dispatchers.IO) {
+                                SDResourceManager.deleteResource(context, target.id)
+                            }
+                            isBusy = false
+                            if (success) {
+                                refreshTrigger++
+                                Toast.makeText(context, "已删除", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "删除失败", Toast.LENGTH_SHORT).show()
+                            }
+                            deleteTarget = null
                         }
-                        deleteTarget = null
                     }
                 ) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text(if (isBusy) "删除中…" else "删除", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -304,20 +332,27 @@ fun SdResourceGalleryScreen(
             },
             confirmButton = {
                 TextButton(
-                    enabled = renameText.isNotBlank() && renameText != target.id.substringAfterLast("/"),
+                    enabled = !isBusy && renameText.isNotBlank() && renameText != target.id.substringAfterLast("/"),
                     onClick = {
+                        isBusy = true
                         val oldId = target.id
                         val oldName = oldId.substringAfterLast("/")
-                        val success = SDResourceManager.renameResource(context, oldName, renameText.trim())
-                        if (success) {
-                            refreshTrigger++
-                            Toast.makeText(context, "已重命名", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "重命名失败", Toast.LENGTH_SHORT).show()
+                        scope.launch {
+                            // 目录重命名同样是磁盘 IO（B3 修复：原实现在主线程直调）
+                            val success = withContext(Dispatchers.IO) {
+                                SDResourceManager.renameResource(context, oldName, renameText.trim())
+                            }
+                            isBusy = false
+                            if (success) {
+                                refreshTrigger++
+                                Toast.makeText(context, "已重命名", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "重命名失败", Toast.LENGTH_SHORT).show()
+                            }
+                            renameTarget = null
                         }
-                        renameTarget = null
                     }
-                ) { Text("确认") }
+                ) { Text(if (isBusy) "处理中…" else "确认") }
             },
             dismissButton = {
                 TextButton(onClick = { renameTarget = null }) { Text("取消") }
@@ -665,6 +700,64 @@ private fun SdLoadingState() {
                 .align(Alignment.BottomCenter)
                 .padding(AppSpacing.Xl)
         )
+    }
+}
+
+/** 加载失败错误态 — 扫描异常时展示真实原因并提供重试（替代被吞掉后伪装的空态） */
+@Composable
+private fun SdErrorState(message: String, onRetry: () -> Unit) {
+    val errorColor = MaterialTheme.colorScheme.error
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(AppSpacing.Xxl),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.Md)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(errorColor.copy(alpha = 0.25f), Color.Transparent)
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.SdStorage,
+                    contentDescription = null,
+                    tint = errorColor,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+            Text(
+                "资源扫描失败",
+                style = AppTypography.TitleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                message,
+                style = AppTypography.BodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            TextButton(onClick = onRetry) {
+                Icon(
+                    imageVector = Icons.Rounded.Refresh,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(AppSpacing.Icon.Sm)
+                )
+                Spacer(modifier = Modifier.width(AppSpacing.Xs))
+                Text("重试", color = MaterialTheme.colorScheme.primary)
+            }
+        }
     }
 }
 
