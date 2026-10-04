@@ -436,6 +436,9 @@ fun JiuxinChatScreen(
                                     val isUser = message.type == ChatMessageType.USER.name
                                     messageActionTarget = Pair(message.id, isUser)
                                 }
+                            },
+                            onRetryClick = remember(message.id) {
+                                { viewModel.retryMessage(message.id) }
                             }
                         )
                     }

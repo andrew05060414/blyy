@@ -57,6 +57,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Person
@@ -70,6 +71,7 @@ import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -131,6 +133,7 @@ import coil.request.ImageRequest
 import com.azurlane.blyy.R
 import com.azurlane.blyy.data.model.ChatMessage
 import com.azurlane.blyy.data.model.ChatMessageType
+import com.azurlane.blyy.data.model.MessageStatus
 import com.azurlane.blyy.data.model.ChatSession
 import com.azurlane.blyy.data.model.GroupPosition
 import com.azurlane.blyy.data.model.PersonaConfig
@@ -265,7 +268,8 @@ internal fun MessageBubble(
     isGroup: Boolean = false,
     onVoiceClick: () -> Unit,
     onStickerClick: () -> Unit,
-    onMessageLongClick: () -> Unit = {}
+    onMessageLongClick: () -> Unit = {},
+    onRetryClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     // 是否显示头像/名称（仅组首和独立消息）
@@ -278,6 +282,8 @@ internal fun MessageBubble(
             // ── 用户消息：JUUSTAGRAM 蓝色气泡 #5BA4E6，右对齐，无头像（设计规范） ──
             val bubbleColor = if (isDark) JuusColors.Dark.UserBubble else JuusColors.UserBubble
             val bubbleShape = outgoingBubbleShape(groupPosition)
+            val isFailed = message.status == MessageStatus.FAILED.name
+            val isSending = message.status == MessageStatus.SENDING.name
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = topPadding, start = AppSpacing.Md, end = AppSpacing.Md),
                 horizontalArrangement = Arrangement.End,
@@ -287,9 +293,10 @@ internal fun MessageBubble(
                     Box(
                         modifier = Modifier
                             .clip(bubbleShape)
-                            .background(bubbleColor)
+                            .background(bubbleColor.copy(alpha = if (isFailed) 0.72f else 1f))
                             .combinedClickable(
-                                onClick = {},
+                                // 失败消息点击气泡即可重试（B2 修复：失败态此前不可见不可重试）
+                                onClick = { if (isFailed) onRetryClick() },
                                 onLongClick = onMessageLongClick
                             )
                             .padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Sm)
@@ -300,13 +307,46 @@ internal fun MessageBubble(
                             color = JuusColors.TextOnPrimary
                         )
                     }
-                    if (showTimestamp) {
-                        Text(
-                            text = formatTime(message.timestamp),
-                            style = AppTypography.LabelMedium,
-                            color = if (isDark) JuusColors.Dark.TextTime else JuusColors.TextTime,
-                            modifier = Modifier.padding(end = AppSpacing.Xs, top = AppSpacing.Xxs)
-                        )
+                    when {
+                        // 发送失败：错误提示 + 点击重试
+                        isFailed -> {
+                            Row(
+                                modifier = Modifier
+                                    .padding(end = AppSpacing.Xs, top = AppSpacing.Xxs)
+                                    .clip(RoundedCornerShape(AppSpacing.Corner.Sm))
+                                    .clickable(onClick = onRetryClick)
+                                    .padding(horizontal = AppSpacing.Xxs, vertical = 1.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(AppSpacing.Xs)
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Error,
+                                    contentDescription = "发送失败",
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                                Text(
+                                    text = "发送失败，点击重试",
+                                    style = AppTypography.LabelMedium,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                        // 发送中：时间戳位置换小转圈
+                        isSending -> {
+                            CircularProgressIndicator(
+                                strokeWidth = 1.5.dp,
+                                modifier = Modifier.padding(end = AppSpacing.Xs + AppSpacing.Xxs, top = AppSpacing.Xxs).size(12.dp)
+                            )
+                        }
+                        else -> if (showTimestamp) {
+                            Text(
+                                text = formatTime(message.timestamp),
+                                style = AppTypography.LabelMedium,
+                                color = if (isDark) JuusColors.Dark.TextTime else JuusColors.TextTime,
+                                modifier = Modifier.padding(end = AppSpacing.Xs, top = AppSpacing.Xxs)
+                            )
+                        }
                     }
                 }
             }
