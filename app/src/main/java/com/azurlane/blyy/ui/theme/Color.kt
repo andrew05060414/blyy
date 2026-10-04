@@ -76,6 +76,38 @@ object AppColors {
     val SurfaceContainerHighDark: Color = Color(0xFF1A3050)
     val SurfaceContainerHighestDark: Color = Color(0xFF243850)
 
+    // ==================== 功能青补充档（设计语言 V2「深海舰队」） ====================
+    /** 深青 — 小字号文字直落于青色填充时的安全底色（#0096C7 上白字对比不足 AA），也用于按压态渐变终点 */
+    val PrimaryDeepLight: Color = Color(0xFF0077B6)
+    val PrimaryDeepDark: Color = Color(0xFF0096C7)
+
+    /** 青色薄纱 — 选中行底色/聚焦光晕，替代各处手写的 primary.copy(alpha = 0.1f) */
+    val PrimaryVeilLight: Color = Color(0x1F0096C7)   // 12%
+    val PrimaryVeilDark: Color = Color(0x2948CAE4)    // 16%
+
+    // ==================== 遮罩族（V2）— 语音/相机/媒体查看器等深色语境统一 ====================
+    object Scrim {
+        /** 深海黑（非纯黑，与品牌阴影同色族，黑得"深"而不"脏"） */
+        val Base: Color = Color(0xFF05101E)
+        val OnScrim: Color = Color(0xFFFFFFFF)
+        /** 列表底部渐晕、图片上的次级文字底 */
+        const val Subtle = 0.35f
+        /** 播放器控件底、气泡渐晕 */
+        const val Medium = 0.55f
+        /** 全屏查看器背景、相机取景 */
+        const val Heavy = 0.85f
+    }
+
+    // ==================== 贵金属金（V2）— 金色只属于珍贵时刻 ====================
+    object Gold {
+        /** 亮色模式下可读的金系文字（对普通表面 ≥5:1）；#FFD166 本身禁作文字色 */
+        val TextLight: Color = Color(0xFF8C5E00)
+        /** 暗色模式下可读的金系文字（≥7:1） */
+        val TextDark: Color = Color(0xFFFFD97A)
+        /** 金色边缘辉光（配合 GoldAccent 渐变使用，营造抛光黄铜质感） */
+        val Glow: Color = Color(0x47FFD166)   // 28%
+    }
+
     // ==================== 指挥面板色 ====================
     object Panel {
         val Dark: Color = Color(0xD90F1F36)
@@ -182,6 +214,19 @@ object AppColors {
             )
             "超稀有" -> Brush.linearGradient(
                 colors = listOf(Color(0xFF48CAE4), Color(0xFF0096C7))
+            )
+            // V2 补全：此前仅前三档有渐变对，后四档为纯色
+            "最高方案" -> Brush.linearGradient(
+                colors = listOf(Color(0xFF60A5FA), Color(0xFFA78BFA))
+            )
+            "精锐" -> Brush.linearGradient(
+                colors = listOf(Color(0xFF34D399), Color(0xFF0EA5E9))
+            )
+            "稀有" -> Brush.linearGradient(
+                colors = listOf(Color(0xFF94A3B8), Color(0xFF64748B))
+            )
+            "普通" -> Brush.linearGradient(
+                colors = listOf(Color(0xFF64748B), Color(0xFF475569))
             )
             else -> Brush.linearGradient(
                 colors = listOf(getRarityColor(rarity), getRarityColor(rarity))

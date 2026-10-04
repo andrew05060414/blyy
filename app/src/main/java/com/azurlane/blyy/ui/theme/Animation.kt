@@ -12,6 +12,10 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import android.provider.Settings
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 
 object AppAnimation {
     
@@ -319,5 +323,21 @@ object AppAnimation {
             durationMillis = Duration.Normal,
             easing = Easings.EmphasizedDecelerate
         )
+    }
+}
+
+/**
+ * 系统减动效检测 — 开发者选项"动画时长缩放"为 0（或无障碍"移除动画"）时返回 true。
+ * V2 规范：装饰性动效（stagger 入场、脉冲、流光）在减动效模式下应跳过或退化为同时入场。
+ */
+@Composable
+fun rememberReducedMotion(): Boolean {
+    val context = LocalContext.current
+    return remember {
+        Settings.Global.getFloat(
+            context.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f
+        ) == 0f
     }
 }

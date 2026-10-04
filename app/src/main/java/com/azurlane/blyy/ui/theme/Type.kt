@@ -258,6 +258,22 @@ object AppTypography {
     val LabelMediumSemiBold = LabelMedium.copy(fontWeight = FontWeight.SemiBold)
     /** 聊天气泡正文 — BodyMedium 紧凑行高变体（适配气泡内多行阅读节奏） */
     val BubbleText = BodyMedium.copy(lineHeight = 19.sp)
+
+    // ==================== 等宽数字族（V2「深海舰队」） ====================
+    // HUD/分数/计时等数字读数启用 tnum（tabular numbers），多位数变化时字宽不跳动。
+    // 数值+单位混排规则：数值用本族，单位降一档字号与对比度。
+
+    /** 仪表数字 — LabelLarge 等宽变体（分数 Chip、计数徽章、排行名次） */
+    val NumericHud = LabelLarge.copy(
+        fontFeatureSettings = "tnum",
+        fontFamily = BlyyFontFamily.Mono
+    )
+
+    /** 大号得分数字 — HeadlineSmallBold 等宽变体（识舰娘结算、最高分） */
+    val NumericScore = HeadlineSmallBold.copy(fontFeatureSettings = "tnum")
+
+    /** 计时/进度数字 — TitleMediumBold 等宽变体（播放器时间、语音时长） */
+    val NumericTimer = TitleMediumBold.copy(fontFeatureSettings = "tnum")
 }
 
 // Material3 Typography — 经典风格
