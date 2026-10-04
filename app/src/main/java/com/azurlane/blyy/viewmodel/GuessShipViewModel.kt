@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlin.random.Random
 import java.util.UUID
 import javax.inject.Inject
@@ -145,6 +146,15 @@ class GuessShipViewModel @Inject constructor(
             repository.allShips.collectLatest { ships ->
                 allShipsCache = ships
                 usedShipIndices.clear()
+                // 冷启动竞态修复：startImageGame/startVoiceGame 可能先于 Room 首次发射执行，
+                // 此时 allShipsCache 仍为空，loadNextQuestion 落入"正在同步"分支且不会自动重试。
+                // 数据到位后若题目尚未生成，则自动补载一次；delay + collectLatest 取消语义
+                // 将 upsert/delete 两次相邻发射合并，避免重复加载。
+                val state = _uiState.value
+                if (ships.isNotEmpty() && state.isActive && state.currentShip == null && !state.showSettlement) {
+                    delay(250)
+                    loadNextQuestion()
+                }
             }
         }
     }
@@ -456,7 +466,7 @@ class GuessShipViewModel @Inject constructor(
                 val voice = voices.random()
                 val questionScore = if (_uiState.value.voiceDifficulty == VoiceDifficulty.HARD) 50 else 10
                 val dialogueId = System.currentTimeMillis()
-                
+
                 _uiState.update {
                     it.copy(
                         currentShip = ship,
@@ -477,14 +487,11 @@ class GuessShipViewModel @Inject constructor(
                         currentQuestionCounted = false
                     )
                 }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        errorMessage = e.message ?: "加载语音失败",
-                        currentShip = null,
-                        currentVoice = null
-                    )
-                }
+            } catch (_: Exception) {
+                // 与 prepareImageQuestion 一致：单艘舰娘语音拉取失败（如 404）时换一艘重试，
+                // 由 loadNextQuestionInternal 在重试耗尽后给出统一友好文案，
+                // 避免把原始 HTTP 异常消息直接透给用户。
+                loadNextQuestionInternal(ships, attempt + 1)
             }
         }
     }
