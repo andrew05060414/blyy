@@ -84,15 +84,10 @@ import com.azurlane.blyy.viewmodel.VoiceViewModel
 import com.azurlane.blyy.viewmodel.VoiceViewState
 import com.azurlane.blyy.ui.components.rememberBlyyHaptics
 import com.azurlane.blyy.ui.components.BlyyHaptic
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.azurlane.blyy.util.MediaDownloader
 import org.intellij.lang.annotations.Language
-import java.io.File
-import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Locale
 import kotlin.math.roundToInt
 private object VoiceScreenConfig {
@@ -165,6 +160,22 @@ fun VoiceScreenContent(
         }
     }
 
+    // B6 修复：整表稳定 key 在组合层一次性计算（LazyListScope 的 forEach 不是组合上下文，
+    // 不能在其中调用 remember）。key 取内容身份（场景|当前语言音频|台词）——
+    // 收藏置顶排序变化时 key 不失效，行状态与动画得以保留；组内重复内容追加序号保证唯一。
+    val stableKeysPerSkin by remember(voiceState.voices) {
+        derivedStateOf {
+            voiceState.voices.groupBy { it.skinName }.mapValues { (_, list) ->
+                val seen = mutableMapOf<String, Int>()
+                list.map { v ->
+                    val base = "${v.scene}|${v.audioUrlCn.ifBlank { v.audioUrlJp }}|${v.dialogue}"
+                    val n = seen.merge(base, 1, Int::plus)
+                    if (n == 1) base else "$base#$n"
+                }
+            }
+        }
+    }
+
     // Precompute voice -> global index map to avoid O(n) indexOf per item (was O(n²) total)
     val voiceIndexMap by remember(voiceState.voices) {
         derivedStateOf {
@@ -176,39 +187,12 @@ fun VoiceScreenContent(
     
     fun downloadVoice(voice: VoiceLine) {
         scope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val url = URL(voice.getActiveAudioUrl(voiceState.voiceLanguage))
-                    val fileName = "${voiceState.shipName}_${voice.scene}_${voiceState.voiceLanguage.shortName}.mp3"
-                    val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
-                        android.os.Environment.DIRECTORY_DOWNLOADS
-                    )
-                    val file = File(downloadsDir, "BLYY/$fileName")
-                    file.parentFile?.mkdirs()
-                    
-                    val referer = when {
-                        url.host.contains("gamekee") -> "https://www.gamekee.com/"
-                        url.host.contains("biligame") || url.host.contains("hdslb") -> "https://wiki.biligame.com/"
-                        else -> "https://www.google.com/"
-                    }
-                    (url.openConnection() as HttpURLConnection).apply {
-                        connectTimeout = 20000
-                        readTimeout = 20000
-                        setRequestProperty("Referer", referer)
-                    }.inputStream.use { input ->
-                        FileOutputStream(file).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "已保存到 Download/BLYY/$fileName", Toast.LENGTH_LONG).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "下载失败: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+            val fileName = "${voiceState.shipName}_${voice.scene}_${voiceState.voiceLanguage.shortName}.mp3"
+            when (val result = MediaDownloader.download(context, voice.getActiveAudioUrl(voiceState.voiceLanguage), fileName)) {
+                is MediaDownloader.Result.Success ->
+                    Toast.makeText(context, "已保存到 Download/${result.relativePath}/${result.displayName}", Toast.LENGTH_LONG).show()
+                is MediaDownloader.Result.Failure ->
+                    Toast.makeText(context, "下载失败: ${result.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -346,11 +330,12 @@ fun VoiceScreenContent(
                     }
 
                     groupedVoices.forEach { (skinName, skinVoices) ->
+                        val skinKeys = stableKeysPerSkin[skinName].orEmpty()
                         stickyHeader {
                             SkinHeader(skinName)
                         }
 
-                        itemsIndexed(skinVoices, key = { index, v -> "${index}_${v.audioUrlCn.ifBlank { v.audioUrlJp }}" }) { _, voice ->
+                        itemsIndexed(skinVoices, key = { i, _ -> skinKeys[i] }) { _, voice ->
                             val globalIndex = voiceIndexMap[voice] ?: -1
                             val isCurrent = playerState.currentMediaItem?.mediaId == voice.audioUrlCn || 
                             playerState.currentMediaItem?.mediaId == voice.audioUrlJp

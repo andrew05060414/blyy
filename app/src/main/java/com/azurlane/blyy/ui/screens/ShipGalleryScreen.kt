@@ -40,12 +40,8 @@ import com.azurlane.blyy.viewmodel.ShipGalleryState
 import com.azurlane.blyy.viewmodel.ShipGalleryViewModel
 import com.azurlane.blyy.ui.components.BlyyHaptic
 import com.azurlane.blyy.ui.components.rememberBlyyHaptics
-import kotlinx.coroutines.Dispatchers
+import com.azurlane.blyy.util.MediaDownloader
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import java.net.URL
 
 private const val TAG = "ShipGalleryScreen"
 
@@ -93,30 +89,15 @@ fun ShipGalleryScreen(
 
     fun downloadImage(url: String, name: String) {
         scope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val imageUrl = URL(url)
-                    val fileName = "${shipName}_${name}.png"
-                    val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
-                        android.os.Environment.DIRECTORY_DOWNLOADS
-                    )
-                    val file = File(downloadsDir, "BLYY/Gallery/$fileName")
-                    file.parentFile?.mkdirs()
-                    
-                    imageUrl.openStream().use { input ->
-                        FileOutputStream(file).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "已保存到 Download/BLYY/Gallery/$fileName", Toast.LENGTH_LONG).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "下载失败: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+            val safeName = name.ifBlank { url.hashCode().toString() }
+                .replace(Regex("[\\\\/:*?\"<>|\\s]"), "_")
+                .take(40)
+            val fileName = "${shipName}_${safeName}.png"
+            when (val result = MediaDownloader.download(context, url, fileName, "${MediaDownloader.ROOT_DIR}/Gallery")) {
+                is MediaDownloader.Result.Success ->
+                    Toast.makeText(context, "已保存到 Download/${result.relativePath}/${result.displayName}", Toast.LENGTH_LONG).show()
+                is MediaDownloader.Result.Failure ->
+                    Toast.makeText(context, "下载失败: ${result.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -135,7 +116,8 @@ fun ShipGalleryScreen(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 BlyyErrorState(
                     message = state.error,
-                    onRetry = onBack
+                    // B10 修复：重试按钮此前实际执行的是返回（onBack）——改为真正重新加载立绘
+                    onRetry = { viewModel.loadGallery(shipName) }
                 )
             }
         } else if (illustrations.isEmpty()) {

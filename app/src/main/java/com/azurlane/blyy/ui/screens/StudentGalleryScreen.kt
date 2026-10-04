@@ -56,6 +56,9 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.ResolvingDataSource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
@@ -78,10 +81,8 @@ import com.azurlane.blyy.ui.components.BlyyHaptic
 import com.azurlane.blyy.ui.components.rememberBlyyHaptics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.azurlane.blyy.util.MediaDownloader
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import java.net.URL
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import androidx.compose.foundation.Image
@@ -202,38 +203,21 @@ fun StudentGalleryScreen(
     val downloadImage = remember(scope, context, studentName) {
         { url: String, description: String ->
             scope.launch {
-                try {
-                    withContext(Dispatchers.IO) {
-                        val imageUrl = URL(url)
-                        val safeName = description.ifBlank { url.hashCode().toString() }
-                            .replace(DOWNLOAD_NAME_SANITIZE_REGEX, "_")
-                            .take(40)
-                        val fileName = "${studentName}_${safeName}.png"
-                        val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
-                            android.os.Environment.DIRECTORY_DOWNLOADS
-                        )
-                        val file = File(downloadsDir, "BLYY/StudentGallery/$fileName")
-                        file.parentFile?.mkdirs()
-
-                        imageUrl.openStream().use { input ->
-                            FileOutputStream(file).use { output ->
-                                input.copyTo(output)
-                            }
-                        }
-
-                        // Main 嵌套在 IO 内部以访问 fileName 变量
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "已保存到 Download/BLYY/StudentGallery/$fileName",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Download failed: ${e.message}", e)
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "下载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                val safeName = description.ifBlank { url.hashCode().toString() }
+                    .replace(DOWNLOAD_NAME_SANITIZE_REGEX, "_")
+                    .take(40)
+                val fileName = "${studentName}_${safeName}.png"
+                when (val result = MediaDownloader.download(
+                    context, url, fileName, "${MediaDownloader.ROOT_DIR}/StudentGallery"
+                )) {
+                    is MediaDownloader.Result.Success -> Toast.makeText(
+                        context,
+                        "已保存到 Download/${result.relativePath}/${result.displayName}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    is MediaDownloader.Result.Failure -> {
+                        Log.e(TAG, "Download failed: ${result.message}")
+                        Toast.makeText(context, "下载失败: ${result.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -1119,6 +1103,8 @@ private fun VideoPlayerOverlay(
     }
 
     // 创建 ExoPlayer — 使用 ResolvingDataSource 按域名注入 Referer
+    // B5 修复：remember 中只做构建（纯构造无副作用），setMediaItem/prepare/play
+    // 移入下方 DisposableEffect，避免副作用在组合期执行且无法被清理
     val exoPlayer = remember(videoUrl) {
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -1149,14 +1135,13 @@ private fun VideoPlayerOverlay(
             .setAudioAttributes(audioAttributes, true)  // true = 自动管理音频焦点
             .setHandleAudioBecomingNoisy(true)           // 耳机拔出时自动暂停
             .setMediaSourceFactory(mediaSourceFactory)
-            .build().also { player ->
-                player.setMediaItem(MediaItem.fromUri(videoUrl))
-                player.prepare()
-                player.playWhenReady = true
-            }
+            .build()
     }
 
-    // 生命周期管理：监听播放状态 + 释放播放器
+    // 生命周期管理：监听播放状态 + 退后台自动暂停/回前台续播（B5 修复）+ 释放播放器
+    // B5 修复：LifecycleOwner 须在组合期获取（DisposableEffect 体不是 @Composable 上下文）
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     DisposableEffect(exoPlayer) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
@@ -1185,7 +1170,29 @@ private fun VideoPlayerOverlay(
         }
         exoPlayer.addListener(listener)
 
+        // B5 修复：退到后台时暂停视频（原先继续出声），回到前台按离开时的播放状态续播
+        var wasPlayingWhenStopped = false
+        val lifecycleObserver = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    wasPlayingWhenStopped = exoPlayer.isPlaying
+                    exoPlayer.pause()
+                }
+                Lifecycle.Event.ON_START -> {
+                    if (wasPlayingWhenStopped) exoPlayer.play()
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
+
+        // 首次挂载（或 videoUrl 变化重建播放器）时启动播放 — 原先写在 remember 内的副作用移到此处
+        exoPlayer.setMediaItem(MediaItem.fromUri(videoUrl))
+        exoPlayer.prepare()
+        exoPlayer.playWhenReady = true
+
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
             exoPlayer.removeListener(listener)
             exoPlayer.release()
             Log.d(TAG, "Video player released")
