@@ -188,6 +188,7 @@ private fun decodeAvatarUrl(url: String): Pair<String, String?> {
  *
  * @param url 头像 URL（可为复合格式 primary||fallback）
  * @param modifier 尺寸与裁剪修饰符
+ * @param contentDescription 无障碍描述（头像具备语义时传入，如舰娘名）
  * @param fallbackContent 两个 URL 均失败时显示的内容（通常为 Icon）
  */
 @Composable
@@ -195,6 +196,7 @@ fun RobustAvatar(
     url: String,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
+    contentDescription: String? = null,
     fallbackContent: @Composable () -> Unit
 ) {
     val (primary, fallback) = remember(url) { decodeAvatarUrl(url) }
@@ -207,8 +209,10 @@ fun RobustAvatar(
         if (currentTarget.isNotBlank() && !allFailed) {
             AsyncImage(
                 model = currentTarget,
-                contentDescription = null,
-                modifier = modifier,
+                contentDescription = contentDescription,
+                // B8 修复：不再复用外层 modifier（同一 modifier 在 Box 与 AsyncImage 上
+                // 双重应用），改为铺满 Box，由 Box 承接调用方的尺寸/裁剪约束
+                modifier = Modifier.fillMaxSize(),
                 contentScale = contentScale,
                 onState = { state ->
                     if (state is AsyncImagePainter.State.Error) {

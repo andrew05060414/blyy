@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.material.icons.rounded.Sailing
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.HeartBroken
@@ -410,8 +410,9 @@ private fun ShipImage(
             contentDescription = contentDescription,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
-            placeholder = rememberVectorPainter(Icons.Default.BrokenImage),
-            error = rememberVectorPainter(Icons.Default.BrokenImage)
+            // 占位/失败改用中性图标：BrokenImage（碎图）在加载中与加载失败两种场景下语义均为误导
+            placeholder = rememberVectorPainter(Icons.Rounded.Sailing),
+            error = rememberVectorPainter(Icons.Rounded.Sailing)
         )
     }
 

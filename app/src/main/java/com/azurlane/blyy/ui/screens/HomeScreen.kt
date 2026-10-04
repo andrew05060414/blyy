@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -244,8 +245,16 @@ fun HomeScreen(
                             }
                         }
                     } else if (state.favoriteShips.isEmpty()) {
-                        // 调用优化后的空状态视图
-                        EmptyFavoritesView(onNavigateToGallery = onNavigateToGallery)
+                        // B10 修复：加载失败（error 非空）优先展示错误原因与重试入口，其次才是真正的空誓约态
+                        if (state.error != null) {
+                            HomeErrorState(
+                                message = state.error.orEmpty(),
+                                onRetry = { onIntent(HomeIntent.Refresh) }
+                            )
+                        } else {
+                            // 调用优化后的空状态视图
+                            EmptyFavoritesView(onNavigateToGallery = onNavigateToGallery)
+                        }
                     } else {
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(minSize = AppSpacing.Card.MinWidth),
@@ -284,6 +293,16 @@ fun HomeScreen(
                                     }
                                 )
                             }
+                        }
+                        // B10 修复：有誓约数据但刷新失败时，顶部细错误条提示（保留旧数据可继续浏览）
+                        state.error?.let { err ->
+                            HomeErrorBanner(
+                                message = err,
+                                onRetry = { onIntent(HomeIntent.Refresh) },
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = AppSpacing.Sm)
+                            )
                         }
                     }
                 }
@@ -586,6 +605,58 @@ private data class ParticleData(
     val size: Float,     // 粒子大小
     val phase: Float     // 动画相位偏移
 )
+
+/** 首页加载失败全屏错误态 — 展示原因并提供重试（B10 修复：error 字段此前从未被消费） */
+@Composable
+private fun HomeErrorState(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(AppSpacing.Xxl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "加载失败",
+            style = AppTypography.EmptyTitle,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(AppSpacing.Sm))
+        Text(
+            text = message,
+            style = AppTypography.EmptyDescription,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(AppSpacing.Lg))
+        TextButton(onClick = onRetry) {
+            Text(text = "点击重试", color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+/** 首页有数据但刷新失败的顶部细错误条 — 点击重试，保留旧数据继续浏览 */
+@Composable
+private fun HomeErrorBanner(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppSpacing.Screen.Horizontal)
+            .clickable(onClick = onRetry),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.errorContainer,
+        tonalElevation = AppSpacing.Elevation.Sm
+    ) {
+        Text(
+            text = message,
+            style = AppTypography.BodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.padding(horizontal = AppSpacing.Md, vertical = AppSpacing.Xs),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
 
 @Composable
 fun EmptyFavoritesView(onNavigateToGallery: () -> Unit) {
