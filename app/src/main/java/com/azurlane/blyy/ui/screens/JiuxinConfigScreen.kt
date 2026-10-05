@@ -112,6 +112,7 @@ import com.azurlane.blyy.util.findActivityViewModelStoreOwner
 import com.azurlane.blyy.viewmodel.ConnectionTestState
 import com.azurlane.blyy.viewmodel.JiuxinViewModel
 import com.azurlane.blyy.viewmodel.ModelListState
+import com.azurlane.blyy.viewmodel.PersonaImportState
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import kotlinx.coroutines.launch
 import com.azurlane.blyy.ui.screens.config.ConfigMainMenu
@@ -156,6 +157,7 @@ fun JiuxinConfigScreen(
     val presets by viewModel.presets.collectAsStateWithLifecycle()
     val apiConfigs by viewModel.apiConfigs.collectAsStateWithLifecycle()
     val personaConfigs by viewModel.personaConfigs.collectAsStateWithLifecycle()
+    val personaImportState by viewModel.personaImportState.collectAsStateWithLifecycle()
 
     var showApiKey by remember { mutableStateOf(false) }
     var showAvatarPicker by remember { mutableStateOf(false) }
@@ -180,6 +182,8 @@ fun JiuxinConfigScreen(
     var showDeletePersonaConfigConfirm by remember { mutableStateOf<PersonaConfig?>(null) }
     var personaConfigNameInput by remember { mutableStateOf("") }
     var showClearPersonaConfirm by remember { mutableStateOf(false) }
+    var showImportPersonaDialog by remember { mutableStateOf(false) }
+    var personaPackUrlInput by remember { mutableStateOf("") }
 
     // 长期记忆管理状态
     val personaMemory by viewModel.currentPersonaMemory.collectAsStateWithLifecycle()
@@ -311,6 +315,11 @@ fun JiuxinConfigScreen(
                             personaConfigNameInput = jiuxinName
                             editingPersonaConfig = null
                             showSavePersonaConfigDialog = true
+                        },
+                        onShowImportPersonaDialog = {
+                            personaPackUrlInput = ""
+                            viewModel.resetPersonaImportState()
+                            showImportPersonaDialog = true
                         },
                         onApplyPersonaConfig = { config ->
                             viewModel.applyPersonaConfig(config)
@@ -634,6 +643,79 @@ fun JiuxinConfigScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeletePersonaConfigConfirm = null }) { Text("取消") }
+            }
+        )
+    }
+    // 从 URL 导入人设包对话框
+    if (showImportPersonaDialog) {
+        AlertDialog(
+            onDismissRequest = { showImportPersonaDialog = false; viewModel.resetPersonaImportState() },
+            title = { Text("从 URL 导入人设包") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.Sm)) {
+                    Text(
+                        "粘贴人设包直链（单个 SillyTavern V2 角色卡 JSON，或卡对象数组）。下载后按内置规则映射为舰娘人格并追加到已保存列表。",
+                        style = AppTypography.BodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    StableOutlinedTextField(
+                        value = personaPackUrlInput,
+                        onValueChange = { personaPackUrlInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("人设包 URL") },
+                        placeholder = { Text("https://…/persona-pack.json") },
+                        singleLine = true,
+                        textStyle = AppTypography.BodyMedium,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary
+                        ),
+                        shape = RoundedCornerShape(AppSpacing.Corner.Sm)
+                    )
+                    when (val state = personaImportState) {
+                        is PersonaImportState.Importing -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(AppSpacing.Sm)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Text(
+                                    "正在下载并导入…",
+                                    style = AppTypography.BodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        is PersonaImportState.Success -> {
+                            Text(
+                                "导入成功 ${state.names.size} 套：${state.names.joinToString("、")}",
+                                style = AppTypography.BodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        is PersonaImportState.Error -> {
+                            Text(
+                                state.message,
+                                style = AppTypography.BodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        is PersonaImportState.Idle -> {}
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.importPersonaPackFromUrl(personaPackUrlInput) },
+                    enabled = personaImportState !is PersonaImportState.Importing
+                ) { Text("导入", color = MaterialTheme.colorScheme.primary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportPersonaDialog = false; viewModel.resetPersonaImportState() }) {
+                    Text("关闭")
+                }
             }
         )
     }

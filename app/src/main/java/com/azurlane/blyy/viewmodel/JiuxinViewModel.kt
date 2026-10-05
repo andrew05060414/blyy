@@ -24,6 +24,8 @@ import com.azurlane.blyy.data.model.Ship
 import com.azurlane.blyy.data.model.TypingMember
 import com.azurlane.blyy.data.model.VoiceLanguage
 import com.azurlane.blyy.data.model.VoiceTagMapping
+import com.azurlane.blyy.data.persona.PersonaPackImporter
+import com.azurlane.blyy.data.persona.PersonaPackParseException
 import com.azurlane.blyy.data.repository.ChatCompletionRequest
 import com.azurlane.blyy.data.repository.ChatRoleMessage
 import com.azurlane.blyy.data.repository.JiuxinApiRepository
@@ -86,6 +88,23 @@ sealed class ModelListState {
     object Empty : ModelListState()
     /** 拉取失败：[message] 为对用户友好的错误原因 */
     data class Error(val message: String) : ModelListState()
+}
+
+/**
+ * 人设包导入状态机
+ *
+ * 区分"未开始 / 下载导入中 / 导入成功 / 失败"四种状态，UI 据此展示
+ * 进度、成功导入的人格名列表或具体错误原因。
+ */
+sealed class PersonaImportState {
+    /** 初始空闲：尚未发起导入 */
+    object Idle : PersonaImportState()
+    /** 导入中：正在下载人设包并解析映射 */
+    object Importing : PersonaImportState()
+    /** 导入成功：[names] 为本次导入的人格名称列表 */
+    data class Success(val names: List<String>) : PersonaImportState()
+    /** 导入失败：[message] 为对用户友好的错误原因 */
+    data class Error(val message: String) : PersonaImportState()
 }
 
 @HiltViewModel
@@ -178,6 +197,9 @@ class JiuxinViewModel @Inject constructor(
 
     private val _modelListState = MutableStateFlow<ModelListState>(ModelListState.Idle)
     val modelListState: StateFlow<ModelListState> = _modelListState.asStateFlow()
+
+    private val _personaImportState = MutableStateFlow<PersonaImportState>(PersonaImportState.Idle)
+    val personaImportState: StateFlow<PersonaImportState> = _personaImportState.asStateFlow()
 
     /**
      * 向后兼容：从 [modelListState] 派生的纯模型列表。
@@ -1264,6 +1286,55 @@ class JiuxinViewModel @Inject constructor(
             settings.updateAiPersonaConfigs { current -> current.filter { it.id != configId } }
             Log.d(TAG, "Deleted persona config: $configId")
         }
+    }
+
+    /**
+     * 从 URL 导入人设包。
+     *
+     * 流程：下载文本 → 解析（单个 SillyTavern V2 卡对象或卡数组）→
+     * 按 [PersonaPackImporter] 映射规则转为 [PersonaConfig] →
+     * 经 [PlayerSettingsDataStore.updateAiPersonaConfigs] 原子追加到已保存人格列表。
+     * URL 由用户在设置页输入，不在代码内硬编码任何地址。
+     * 结果经 [personaImportState] 回传 UI（含可直接展示的中文错误原因）。
+     */
+    fun importPersonaPackFromUrl(url: String) {
+        val trimmed = url.trim()
+        if (trimmed.isBlank()) {
+            _personaImportState.value = PersonaImportState.Error("请输入人设包 URL")
+            return
+        }
+        if (_personaImportState.value is PersonaImportState.Importing) return
+        _personaImportState.value = PersonaImportState.Importing
+        Log.i(TAG, "Importing persona pack from $trimmed")
+        viewModelScope.launch {
+            val download = apiRepository.fetchText(trimmed)
+            _personaImportState.value = when (download) {
+                is JiuxinApiResult.Success -> {
+                    try {
+                        val cards = PersonaPackImporter.parsePack(download.content)
+                        val configs = cards.map { PersonaPackImporter.toPersonaConfig(it) }
+                        settings.updateAiPersonaConfigs { current -> current + configs }
+                        Log.i(TAG, "Imported ${configs.size} persona(s): ${configs.map { it.name }}")
+                        PersonaImportState.Success(configs.map { it.name })
+                    } catch (e: PersonaPackParseException) {
+                        Log.w(TAG, "Persona pack parse failed", e)
+                        PersonaImportState.Error(e.message ?: "人设包解析失败")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Persona pack import failed", e)
+                        PersonaImportState.Error("导入失败：${e.message ?: e.javaClass.simpleName}")
+                    }
+                }
+                is JiuxinApiResult.Failure -> {
+                    Log.w(TAG, "Persona pack download failed: ${download.error.userMessage}")
+                    PersonaImportState.Error("下载失败：${download.error.userMessage}")
+                }
+            }
+        }
+    }
+
+    /** 重置人设包导入状态（对话框关闭时调用） */
+    fun resetPersonaImportState() {
+        _personaImportState.value = PersonaImportState.Idle
     }
 
     /** 一键清空当前舰娘人格所有字段（头像、名称、提示词、语音、表情包），方便重新填写 */

@@ -437,6 +437,67 @@ class JiuxinApiRepository @Inject constructor(
     }
 
     /**
+     * 通用纯文本下载（HTTP GET），用于人设包这类非 AI 接口的静态资源。
+     *
+     * 与 [chatCompletion] 共用同一 OkHttpClient 与异常分类（[JiuxinApiError]），
+     * 但不做重试、不解析模型响应，原样返回响应体文本。
+     *
+     * @param url 资源直链（http/https），由调用方提供，不在库内硬编码任何地址
+     * @return [JiuxinApiResult] 包装的响应体文本
+     */
+    suspend fun fetchText(url: String): JiuxinApiResult<String> {
+        if (url.isBlank()) {
+            return JiuxinApiResult.Failure(JiuxinApiError.MissingConfig("人设包 URL"))
+        }
+        val request = try {
+            Request.Builder().url(url.trim()).get().build()
+        } catch (e: IllegalArgumentException) {
+            Log.w(TAG, "Bad persona pack URL: $url — ${e.message}")
+            return JiuxinApiResult.Failure(JiuxinApiError.BadUrl(e))
+        }
+        return try {
+            val requestTime = System.currentTimeMillis()
+            val response = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                client.newCall(request).execute()
+            }
+            val duration = System.currentTimeMillis() - requestTime
+            response.use {
+                val body = it.body?.string()
+                if (!it.isSuccessful) {
+                    Log.w(TAG, "HTTP ${it.code} fetching persona pack ($url, ${duration}ms)")
+                    return JiuxinApiResult.Failure(
+                        JiuxinApiError.HttpError(it.code, body.orEmpty().take(200))
+                    )
+                }
+                if (body.isNullOrBlank()) {
+                    Log.w(TAG, "Empty body fetching persona pack ($url, code=${it.code})")
+                    return JiuxinApiResult.Failure(JiuxinApiError.EmptyBody())
+                }
+                Log.d(TAG, "Fetched persona pack from $url (${duration}ms, body=${body.length} chars)")
+                JiuxinApiResult.Success(body)
+            }
+        } catch (e: java.net.UnknownHostException) {
+            Log.w(TAG, "UnknownHost fetching persona pack: ${e.message}")
+            JiuxinApiResult.Failure(JiuxinApiError.Unreachable(request.url.host, e))
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.w(TAG, "SocketTimeout fetching persona pack: ${e.message}")
+            JiuxinApiResult.Failure(JiuxinApiError.ReadTimeout(e))
+        } catch (e: java.net.ConnectException) {
+            Log.w(TAG, "ConnectException fetching persona pack: ${e.message}")
+            JiuxinApiResult.Failure(JiuxinApiError.ConnectionRefused(e))
+        } catch (e: javax.net.ssl.SSLException) {
+            Log.w(TAG, "SSLException fetching persona pack: ${e.message}")
+            JiuxinApiResult.Failure(JiuxinApiError.SslError(e))
+        } catch (e: java.io.IOException) {
+            Log.w(TAG, "IOException fetching persona pack: ${e.message}")
+            JiuxinApiResult.Failure(JiuxinApiError.IoError(e))
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error fetching persona pack", e)
+            JiuxinApiResult.Failure(JiuxinApiError.Unknown(e))
+        }
+    }
+
+    /**
      * 根据 baseUrl 生成模型列表端点的候选 URL 列表（按优先级排序，去重）。
      *
      * 处理各种用户输入形态：
