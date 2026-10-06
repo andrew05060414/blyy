@@ -19,6 +19,8 @@ import com.azurlane.blyy.data.model.ApiConfig
 import com.azurlane.blyy.data.model.MessageStatus
 import com.azurlane.blyy.data.model.PersonaConfig
 import com.azurlane.blyy.data.model.PersonaMemory
+import com.azurlane.blyy.data.model.SessionMemoryProgress
+import com.azurlane.blyy.data.memory.MemoryProgressCalculator
 import com.azurlane.blyy.data.model.SessionType
 import com.azurlane.blyy.data.model.Ship
 import com.azurlane.blyy.data.model.TypingMember
@@ -326,6 +328,10 @@ class JiuxinViewModel @Inject constructor(
      */
     private val personaMemories: StateFlow<Map<String, PersonaMemory>> =
         settings.aiPersonaMemories.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** 所有会话的记忆摘要进度（key = sessionId，按会话严格隔离） */
+    private val sessionMemoryProgress: StateFlow<Map<String, SessionMemoryProgress>> =
+        settings.aiSessionMemoryProgress.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     /** 当前全局人格（按 [computeShipKey] 身份定位）的长期记忆，供人格分区展示/编辑 */
     val currentPersonaMemory: StateFlow<PersonaMemory?> = combine(
@@ -1647,6 +1653,7 @@ class JiuxinViewModel @Inject constructor(
             // 先持久化会话列表到 DataStore
             settings.setAiChatSessions(currentList)
             settings.deleteAiSessionMessages(sessionId)
+            settings.updateAiSessionMemoryProgress { it - sessionId }
 
             // 删除的不是当前会话：无需切换，仅更新会话列表内存状态
             if (_currentSessionId.value != sessionId) {
@@ -1757,6 +1764,7 @@ class JiuxinViewModel @Inject constructor(
             // 先持久化到 DataStore
             settings.setAiChatSessions(currentList)
             idsToDelete.forEach { settings.deleteAiSessionMessages(it) }
+            settings.updateAiSessionMemoryProgress { cur -> cur.filterKeys { it !in idsToDelete } }
 
             // 如果当前会话被删除，切换到剩余最新会话；无剩余会话则清空当前会话 ID
             // 注意：不自动创建新会话——会话列表界面允许空状态，用户可通过"+"按钮新建
@@ -3111,32 +3119,26 @@ class JiuxinViewModel @Inject constructor(
      */
     private fun maybeUpdateMemory(session: ChatSession?) {
         if (session == null || session.isGroup) return
-        val key = computeShipKey(session)
+        val shipKey = computeShipKey(session)
+        val sessionId = session.id
         val messages = _chatState.value.messages
-        if (messages.size < MEMORY_TOTAL_THRESHOLD) return
 
-        val memory = personaMemories.value[key]
-        // 定位已摘要进度：优先按时间戳锚在当前列表重定位（防头部截断的下标漂移），锚失效回退纯下标
-        val from = memory?.summarizedLastTs?.takeIf { it > 0 }?.let { ts ->
-            var lastMatchIdx = -1
-            messages.forEachIndexed { i, m -> if (m.timestamp <= ts) lastMatchIdx = i }
-            if (lastMatchIdx >= 0) lastMatchIdx + 1
-            else memory.summarizedCount.coerceAtMost(messages.size)
-        } ?: (memory?.summarizedCount ?: 0).coerceAtMost(messages.size)
-        val to = messages.size - MEMORY_KEEP_RECENT
-        if (to - from < MEMORY_MIN_NEW) return
-        // 用户消息时间戳可能相同（同毫秒连发），确保锚至少推进一条，避免原地空转
-        if (memory != null && to == from && messages.isNotEmpty() &&
-            messages[to - 1].timestamp <= memory.summarizedLastTs
-        ) return
+        val progress = sessionMemoryProgress.value[sessionId]
+        val range = MemoryProgressCalculator.calculateProgressRange(
+            messages = messages,
+            progress = progress,
+            totalThreshold = MEMORY_TOTAL_THRESHOLD,
+            keepRecent = MEMORY_KEEP_RECENT,
+            minNew = MEMORY_MIN_NEW
+        ) ?: return
 
-        if (!memorySummarizingKeys.add(key)) return
-        val transcript = buildMemoryTranscript(messages.subList(from, to))
+        if (!memorySummarizingKeys.add(shipKey)) return
+        val transcript = buildMemoryTranscript(messages.subList(range.from, range.to))
         if (transcript.isBlank()) {
-            memorySummarizingKeys.remove(key)
+            memorySummarizingKeys.remove(shipKey)
             return
         }
-        val existingMemory = memory?.text.orEmpty()
+        val existingMemory = personaMemories.value[shipKey]?.text.orEmpty()
 
         viewModelScope.launch {
             try {
@@ -3176,21 +3178,25 @@ class JiuxinViewModel @Inject constructor(
                     Log.w(TAG, "Memory summarize returned empty, progress not advanced")
                     return@launch
                 }
-                val lastTs = messages.getOrNull(to - 1)?.timestamp ?: 0L
                 settings.updateAiPersonaMemories { cur ->
-                    val old = cur[key]
-                    cur + (key to PersonaMemory(
+                    val old = cur[shipKey]
+                    cur + (shipKey to PersonaMemory(
                         text = newMemory.take(MEMORY_MAX_CHARS),
-                        summarizedCount = maxOf(old?.summarizedCount ?: 0, to),
-                        summarizedLastTs = maxOf(old?.summarizedLastTs ?: 0L, lastTs),
                         updatedAt = System.currentTimeMillis()
                     ))
                 }
-                Log.d(TAG, "Persona memory updated for $key (${-from + to} messages summarized)")
+                settings.updateAiSessionMemoryProgress { cur ->
+                    val old = cur[sessionId]
+                    cur + (sessionId to SessionMemoryProgress(
+                        summarizedCount = maxOf(old?.summarizedCount ?: 0, range.newSummarizedCount),
+                        summarizedLastTs = maxOf(old?.summarizedLastTs ?: 0L, range.newSummarizedLastTs)
+                    ))
+                }
+                Log.d(TAG, "Persona memory updated for " + shipKey + " in session " + sessionId + " (" + (range.to - range.from) + " messages summarized)")
             } catch (e: Exception) {
                 Log.w(TAG, "Memory summarize failed, will retry on next trigger", e)
             } finally {
-                memorySummarizingKeys.remove(key)
+                memorySummarizingKeys.remove(shipKey)
             }
         }
     }

@@ -409,6 +409,21 @@ data class PersonaMemory(
 )
 
 /**
+ * 会话级记忆摘要进度
+ *
+ * 将消息摘要进度按会话（sessionId）严格隔离，避免不同会话共享进度导致新会话消息被跳过。
+ * 记忆文本（[PersonaMemory]）仍按舰娘身份（shipKey）跨会话继承与合并。
+ *
+ * @param summarizedCount 已完成摘要的消息数量进度（按当前会话消息列表绝对下标计）
+ * @param summarizedLastTs 已摘要区间内最后一条消息的 timestamp（当前会话内的进度锚点）
+ */
+@Serializable
+data class SessionMemoryProgress(
+    val summarizedCount: Int = 0,
+    val summarizedLastTs: Long = 0L
+)
+
+/**
  * 聊天会话状态
  *
  * 群聊并发扩展：
