@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.Key
@@ -98,6 +99,7 @@ import com.azurlane.blyy.ui.components.AdaptiveScreenBackground
 import com.azurlane.blyy.ui.components.BlyyBottomSheet
 import com.azurlane.blyy.ui.components.BlyyPanel
 import com.azurlane.blyy.ui.components.BlyyPrimaryButton
+import com.azurlane.blyy.ui.components.BlyySecondaryButton
 import com.azurlane.blyy.ui.components.BlyyEntrance
 import com.azurlane.blyy.ui.components.RobustAvatar
 import com.azurlane.blyy.ui.screens.chat.AvatarPickerSheet
@@ -723,6 +725,7 @@ internal fun PersonaSection(
     onSaveMemory: (String) -> Unit,
     onClearMemory: () -> Unit,
     onSavePersonaConfig: () -> Unit,
+    onShowImportPersonaDialog: () -> Unit,
     onApplyPersonaConfig: (PersonaConfig) -> Unit,
     onEditPersonaConfig: (PersonaConfig) -> Unit,
     onDeletePersonaConfig: (PersonaConfig) -> Unit,
@@ -961,6 +964,12 @@ internal fun PersonaSection(
                         icon = Icons.Rounded.Psychology,
                         modifier = Modifier.fillMaxWidth(),
                         enabled = jiuxinName.isNotBlank() || systemPrompt.isNotBlank() || avatarUrl.isNotBlank()
+                    )
+                    BlyySecondaryButton(
+                        text = "从 URL 导入人设包",
+                        onClick = onShowImportPersonaDialog,
+                        icon = Icons.Rounded.Download,
+                        modifier = Modifier.fillMaxWidth()
                     )
                     if (personaConfigs.isNotEmpty()) {
                         Text(
