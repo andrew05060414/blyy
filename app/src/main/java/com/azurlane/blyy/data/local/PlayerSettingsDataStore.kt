@@ -128,6 +128,8 @@ class PlayerSettingsDataStore @Inject constructor(
         private val AI_PERSONA_CONFIGS_KEY = stringPreferencesKey("ai_persona_configs")
         // 舰娘长期记忆（key = 舰娘身份 shipKey，value = PersonaMemory）
         private val AI_PERSONA_MEMORIES_KEY = stringPreferencesKey("ai_persona_memories")
+        // 会话级记忆摘要进度（key = sessionId，value = SessionMemoryProgress）
+        private val AI_SESSION_MEMORY_PROGRESS_KEY = stringPreferencesKey("ai_session_memory_progress")
         // 用户（指挥官）配置
         private val USER_NAME_KEY = stringPreferencesKey("user_name")
         private val USER_AVATAR_URL_KEY = stringPreferencesKey("user_avatar_url")
@@ -697,6 +699,37 @@ class PlayerSettingsDataStore @Inject constructor(
                 emptyMap()
             }
             prefs[AI_PERSONA_MEMORIES_KEY] = lenientJson.encodeToString(transform(current))
+        }
+    }
+
+    // ── 会话记忆摘要进度管理 ──
+
+    /** 所有会话的记忆摘要进度（key = sessionId） */
+    val aiSessionMemoryProgress: Flow<Map<String, com.azurlane.blyy.data.model.SessionMemoryProgress>> = safeData.map { prefs ->
+        val json = prefs[AI_SESSION_MEMORY_PROGRESS_KEY] ?: "{}"
+        try {
+            lenientJson.decodeFromString<Map<String, com.azurlane.blyy.data.model.SessionMemoryProgress>>(json)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to decode session memory progress", e)
+            emptyMap()
+        }
+    }
+
+    /**
+     * 会话记忆摘要进度原子更新
+     */
+    suspend fun updateAiSessionMemoryProgress(
+        transform: (Map<String, com.azurlane.blyy.data.model.SessionMemoryProgress>) -> Map<String, com.azurlane.blyy.data.model.SessionMemoryProgress>
+    ) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[AI_SESSION_MEMORY_PROGRESS_KEY] ?: "{}"
+            val current = try {
+                lenientJson.decodeFromString<Map<String, com.azurlane.blyy.data.model.SessionMemoryProgress>>(json)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to decode session memory progress during atomic update, treating as empty", e)
+                emptyMap()
+            }
+            prefs[AI_SESSION_MEMORY_PROGRESS_KEY] = lenientJson.encodeToString(transform(current))
         }
     }
 
